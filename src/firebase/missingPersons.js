@@ -19,7 +19,7 @@ import {
   onSnapshot,
   increment,
 } from 'firebase/firestore'
-import { db } from './config'
+import { db, auth } from './config'
 import { ensureAnonymousAuth } from './authService'
 
 const COL = 'missing_persons'
@@ -92,33 +92,49 @@ async function runMatchingEngine(docId, reportData) {
       const score = scoreMatch(reportData, d.data())
       if (score > bestScore) { bestScore = score; bestMatchId = d.id }
     })
-    await updateDoc(doc(db, COL, docId), {
-      confidence: bestScore,
-      matchedWith: bestScore >= 40 ? bestMatchId : null,
-      updatedAt: serverTimestamp(),
-    })
-    // If no good match found, auto-create a rescue task
+
+    // ── Step 1: Create rescue task (do this FIRST so it always runs) ──────
     if (bestScore < 40) {
-      await addDoc(collection(db, 'tasks'), {
-        name: reportData.name || 'Unknown',
-        priority: 'HIGH',
-        location: reportData.lastKnownLocation?.description || reportData.lastKnownLocation?.district || 'Unknown',
-        district: reportData.lastKnownLocation?.district || null,
-        team: 'Unassigned',
-        status: 'open',
-        missingPersonId: docId,
-        notes: 'Auto-created: no match found.',
-        createdAt: serverTimestamp(),
+      try {
+        await addDoc(collection(db, 'tasks'), {
+          name: reportData.name || 'Unknown',
+          priority: 'HIGH',
+          location: reportData.lastKnownLocation?.description || reportData.lastKnownLocation?.district || 'Unknown',
+          district: reportData.lastKnownLocation?.district || null,
+          team: 'Unassigned',
+          status: 'open',
+          missingPersonId: docId,
+          notes: 'Auto-created: no match found.',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        })
+      } catch (taskErr) {
+        console.warn('[DisasterIQ] Task creation error:', taskErr)
+      }
+    }
+
+    // ── Step 2: Update confidence score on the report ─────────────────────
+    try {
+      await updateDoc(doc(db, COL, docId), {
+        confidence: bestScore,
+        matchedWith: bestScore >= 40 ? bestMatchId : null,
         updatedAt: serverTimestamp(),
       })
+    } catch (updateErr) {
+      console.warn('[DisasterIQ] Confidence update error (non-critical):', updateErr)
     }
-    // Update global stats counter (setDoc+merge creates the doc if it doesn't exist yet)
-    await setDoc(doc(db, 'stats', 'global'), {
-      missing: increment(1),
-      updatedAt: serverTimestamp(),
-    }, { merge: true })
+
+    // ── Step 3: Update global stats ───────────────────────────────────────
+    try {
+      await setDoc(doc(db, 'stats', 'global'), {
+        missing: increment(1),
+        updatedAt: serverTimestamp(),
+      }, { merge: true })
+    } catch (statsErr) {
+      console.warn('[DisasterIQ] Stats update error (non-critical):', statsErr)
+    }
+
   } catch (err) {
-    // Matching is best-effort — don't block the report submission
     console.warn('[DisasterIQ] Matching engine error (non-critical):', err)
   }
 }
@@ -156,11 +172,12 @@ export async function submitMissingPersonReport(formData) {
       timeLastSeen: formData.time || null,
     },
     description: formData.description?.trim() || null,
-    photoUrl: null,        // photo upload requires Storage (Blaze plan)
+    photoUrl: null,
     reporterContact: {
       phone: formData.phone?.trim() || null,
       altPhone: formData.altPhone?.trim() || null,
     },
+    reporterUid: auth.currentUser?.uid || null,   // ← needed for owner-based rule checks
     status: 'missing',
     confidence: null,
     matchedWith: null,
