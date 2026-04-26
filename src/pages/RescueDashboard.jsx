@@ -119,14 +119,14 @@ export default function RescueDashboard() {
     <div className="h-screen flex flex-col" style={{ fontFamily: 'var(--font-body)' }}>
       <div className="shrink-0 h-[96px]" />
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
 
         {/* ── LEFT PANEL ──────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
-          className="w-[40%] shrink-0 border-r border-slate-200/60 bg-[#F8FAFC] flex flex-col overflow-hidden"
+          className="w-full md:w-[45%] lg:w-[40%] xl:w-[35%] shrink-0 border-b md:border-b-0 md:border-r border-slate-200/60 bg-[#F8FAFC] flex flex-col h-[55vh] md:h-auto overflow-hidden"
         >
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
 
@@ -184,7 +184,7 @@ export default function RescueDashboard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.15 }}
-          className="flex-1 flex flex-col overflow-hidden"
+          className="flex-1 flex flex-col min-h-[45vh] md:min-h-0 overflow-hidden"
         >
           <CommandMap />
         </motion.div>

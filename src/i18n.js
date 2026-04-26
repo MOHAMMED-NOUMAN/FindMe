@@ -9,6 +9,7 @@ const resources = {
         home: 'Home',
         search: 'Search',
         report: 'Report',
+        safe: 'Safe',
         rescue: 'Rescue'
       }
     }
@@ -18,6 +19,7 @@ const resources = {
       navbar: {
         home: 'होम',
         search: 'खोजें',
+        safe: 'सुरक्षित',
         report: 'रिपोर्ट',
         rescue: 'बचाव'
       }
@@ -28,6 +30,7 @@ const resources = {
       navbar: {
         home: 'హోమ్',
         search: 'శోధన',
+        safe: 'సురక్షిత',
         report: 'నివేదిక',
         rescue: 'రక్షణ'
       }

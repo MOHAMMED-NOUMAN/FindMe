@@ -2,7 +2,8 @@ import Hero from '../components/Hero'
 import QuickStats from '../components/QuickStats'
 import AlertsBar from '../components/AlertsBar'
 import QuickActions from '../components/QuickActions'
-import ReportMissingPanel from '../components/ReportMissingPanel'
+import BulletinBoard from '../components/BulletinBoard'
+import AIMatchResults from '../components/AIMatchResults'
 
 export default function Home() {
   return (
@@ -10,12 +11,10 @@ export default function Home() {
       <Hero />
       <QuickStats />
       <AlertsBar />
-      <div className="mt-12">
-        <QuickActions />
+      <div className="mt-8">
+        <BulletinBoard />
       </div>
-      <div className="mt-4">
-        <ReportMissingPanel />
-      </div>
+      <AIMatchResults />
     </>
   )
 }

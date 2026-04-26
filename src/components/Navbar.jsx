@@ -8,6 +8,7 @@ const navLinks = [
   { key: 'home', to: '/' },
   { key: 'search', to: '/search' },
   { key: 'report', to: '/report' },
+  { key: 'safe', to: '/safe' },
   { key: 'rescue', to: '/rescue' },
 ]
 
@@ -55,18 +56,18 @@ export default function Navbar() {
       className="fixed top-0 left-0 right-0 z-50 flex flex-col"
     >
       {/* ── Live Alerts Banner ─────────────────────────── */}
-      <div className="flex items-center overflow-hidden border-b border-amber-200" style={{ fontFamily: 'var(--font-body)' }}>
-        <div className="bg-amber-500 text-white text-xs font-bold px-4 py-1.5 shrink-0 tracking-wide uppercase z-10 relative shadow-sm">LIVE</div>
-        <div className="flex-1 bg-amber-50 overflow-hidden relative h-7 sm:h-8 flex items-center">
+      <div className="flex items-center overflow-hidden border-b border-red-200" style={{ fontFamily: 'var(--font-body)' }}>
+        <div className="bg-red-500 text-white text-xs font-bold px-4 py-1.5 shrink-0 tracking-wide uppercase z-10 relative shadow-sm">LIVE</div>
+        <div className="flex-1 bg-red-50 overflow-hidden relative h-7 sm:h-8 flex items-center">
           <motion.div
-            className="flex items-center gap-12 whitespace-nowrap text-xs sm:text-sm text-amber-900 font-medium absolute"
+            className="flex items-center gap-12 whitespace-nowrap text-xs sm:text-sm text-red-900 font-medium absolute"
             animate={{ x: ['0%', '-50%'] }}
             transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
           >
             {[...messages, ...messages].map((msg, i) => (
               <span key={i} className="flex items-center gap-2">
                 {msg}
-                <span className="text-amber-300">•</span>
+                <span className="text-red-300">•</span>
               </span>
             ))}
           </motion.div>

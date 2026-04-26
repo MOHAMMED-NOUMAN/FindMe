@@ -235,12 +235,19 @@ function Step2({ data, onChange }) {
 
 function Step3({ data, onChange }) {
   const [preview, setPreview] = useState(null)
+  const fileInputRef = useRef(null)
 
   const handleFile = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     onChange('photoFile', file)
     setPreview(URL.createObjectURL(file))
+  }
+
+  const handleBoxClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
   }
 
   return (
@@ -258,12 +265,12 @@ function Step3({ data, onChange }) {
             </button>
           </div>
         ) : (
-          <label className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors">
+          <div onClick={handleBoxClick} className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors">
             <Camera className="w-8 h-8 mx-auto mb-2 text-slate-400" />
             <p className="text-sm font-medium text-slate-500">Click to upload a photo</p>
             <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-          </label>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          </div>
         )}
       </div>
       <div>

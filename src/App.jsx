@@ -6,6 +6,7 @@ import ReportPage from './pages/ReportPage'
 import RescueDashboard from './pages/RescueDashboard'
 import MatchResultsPage from './pages/MatchResultsPage'
 import ReportFoundPage from './pages/ReportFoundPage'
+import SafePage from './pages/SafePage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/rescue" element={<RescueDashboard />} />
             <Route path="/results/:reportId" element={<MatchResultsPage />} />
             <Route path="/report-found" element={<ReportFoundPage />} />
+            <Route path="/safe" element={<SafePage />} />
           </Routes>
         </main>
       </div>

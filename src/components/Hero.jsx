@@ -84,6 +84,18 @@ export default function Hero() {
             </Link>
           </motion.div>
 
+          {/* Report Found */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              to="/report-found"
+              className="inline-flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl px-6 py-3.5 font-semibold text-sm transition-colors shadow-md shadow-emerald-500/20"
+              style={{ fontFamily: 'var(--font-body)' }}
+            >
+              <UserPlus className="w-4 h-4" />
+              Report Found Person
+            </Link>
+          </motion.div>
+
           {/* I Am Safe */}
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
             <Link
