@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
 import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
+import indiaData from '../data/indiaStatesDistricts.json'
 
 const STEPS = [
   { title: 'Person Details', icon: User },
@@ -138,6 +139,9 @@ function Step1({ data, onChange }) {
 }
 
 function Step2({ data, onChange }) {
+  const selectedStateObj = indiaData.states.find(s => s.name === data.state)
+  const districts = selectedStateObj ? selectedStateObj.districts : []
+
   return (
     <div className="space-y-5">
       <div>
@@ -172,16 +176,57 @@ function Step2({ data, onChange }) {
           />
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">District</label>
-        <select
-          value={data.district}
-          onChange={(e) => onChange('district', e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
-        >
-          <option value="">Select District</option>
-          {['Kozhikode','Wayanad','Malappuram','Kannur','Thrissur','Palakkad','Idukki','Ernakulam'].map((d) => <option key={d}>{d}</option>)}
-        </select>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">State</label>
+          <select
+            value={data.state || ''}
+            onChange={(e) => {
+              onChange('state', e.target.value)
+              onChange('district', '')
+              onChange('customDistrict', '')
+            }}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
+          >
+            <option value="">Select State</option>
+            {indiaData.states.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">District / City</label>
+          {data.district === 'Other' ? (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Type district name"
+                value={data.customDistrict || ''}
+                onChange={(e) => onChange('customDistrict', e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
+              />
+              <button 
+                type="button"
+                onClick={() => { onChange('district', ''); onChange('customDistrict', ''); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <select
+              value={data.district || ''}
+              onChange={(e) => {
+                onChange('district', e.target.value)
+                if (e.target.value !== 'Other') onChange('customDistrict', '')
+              }}
+              disabled={!data.state}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 disabled:opacity-50"
+            >
+              <option value="">Select District</option>
+              {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+              {data.state && <option value="Other">Other (Type below)</option>}
+            </select>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -308,7 +353,7 @@ export default function ReportPage() {
 
   const [form, setForm] = useState({
     name: '', age: '', gender: '', relationship: '',
-    location: '', date: '', time: '', district: '',
+    location: '', date: '', time: '', state: '', district: '', customDistrict: '',
     description: '',
     photoFile: null,
     phone: '', altPhone: '', consent: false,
@@ -318,14 +363,17 @@ export default function ReportPage() {
 
   const stepData = [
     { name: form.name, age: form.age, gender: form.gender, relationship: form.relationship },
-    { location: form.location, date: form.date, time: form.time, district: form.district },
+    { location: form.location, date: form.date, time: form.time, state: form.state, district: form.district, customDistrict: form.customDistrict },
     { description: form.description, photoFile: form.photoFile },
     { phone: form.phone, altPhone: form.altPhone, consent: form.consent },
   ]
 
   const canNext = () => {
     if (step === 0) return form.name.trim() && form.age
-    if (step === 1) return form.location.trim() && form.district
+    if (step === 1) {
+      const validDistrict = form.district === 'Other' ? form.customDistrict.trim() : form.district
+      return form.location.trim() && form.state && validDistrict
+    }
     if (step === 2) return form.description.trim()
     if (step === 3) return form.phone.trim() && form.consent
     return true
@@ -336,7 +384,13 @@ export default function ReportPage() {
     setSubmitting(true)
     setError(null)
     try {
-      const result = await submitMissingPersonReport(form)
+      const submitData = { ...form }
+      if (submitData.district === 'Other') {
+        submitData.district = submitData.customDistrict
+      }
+      delete submitData.customDistrict
+
+      const result = await submitMissingPersonReport(submitData)
       setRefId(result.refId)
       setSubmitted(true)
     } catch (err) {
