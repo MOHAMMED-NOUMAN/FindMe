@@ -7,10 +7,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isRescueTeam() {
+    // Any user who signed in via Google (not anonymous)
+    function isGoogleUser() {
       return isSignedIn() &&
+        request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function isRescueTeam() {
+      return isGoogleUser() || (
+        isSignedIn() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-          in ['rescue', 'coordinator', 'admin'];
+          in ['rescue', 'coordinator', 'admin']
+      );
     }
 
     function isCoordinator() {
@@ -66,7 +74,7 @@ service cloud.firestore {
 
     // ── teams ────────────────────────────────────────────────────────────
     match /teams/{docId} {
-      allow read: if isRescueTeam();
+      allow read: if isRescueTeam();  // Google users can read
       allow write: if isCoordinator();
     }
 

@@ -1,20 +1,37 @@
 // ============================================================
 // DisasterIQ — Auth Service
-// Uses Anonymous auth — free, no SMS cost.
-// Phone number is collected as plain text in the report form
-// and stored in Firestore. OTP verification is Phase 2.
+// Anonymous auth  → civilian report submissions (free, no SMS)
+// Google Sign-In  → rescue team / coordinator dashboard access
 // ============================================================
 
-import { signInAnonymously, signOut, onAuthStateChanged } from 'firebase/auth'
+import {
+  signInAnonymously,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth'
 import { auth } from './config'
 
-// ── Sign in anonymously (called automatically before any Firestore write) ─
-// Returns the user object. Safe to call multiple times — if already signed
-// in, Firebase returns the existing session immediately.
+const googleProvider = new GoogleAuthProvider()
+
+// ── Sign in with Google (rescue team / coordinator) ───────────────────────
+export async function signInWithGoogle() {
+  const result = await signInWithPopup(auth, googleProvider)
+  return result.user
+}
+
+// ── Sign in anonymously (auto-called before civilian report writes) ────────
 export async function ensureAnonymousAuth() {
   if (auth.currentUser) return auth.currentUser
   const credential = await signInAnonymously(auth)
   return credential.user
+}
+
+// ── Check if current user signed in via Google (not anonymous) ────────────
+export function isGoogleUser() {
+  const user = auth.currentUser
+  return !!(user && !user.isAnonymous)
 }
 
 // ── Sign out ──────────────────────────────────────────────────────────────
