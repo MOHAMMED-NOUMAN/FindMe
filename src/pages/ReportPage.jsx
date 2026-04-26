@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
 import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
@@ -345,6 +346,7 @@ function Confirmation({ refId, personName }) {
 }
 
 export default function ReportPage() {
+  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -393,6 +395,8 @@ export default function ReportPage() {
       const result = await submitMissingPersonReport(submitData)
       setRefId(result.refId)
       setSubmitted(true)
+      // Navigate to the live ML match results page
+      navigate(`/results/${result.id}`)
     } catch (err) {
       console.error('Submit error:', err)
       setError(err?.message || 'Failed to submit report. Please try again.')

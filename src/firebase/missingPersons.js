@@ -19,8 +19,10 @@ import {
   onSnapshot,
   increment,
 } from 'firebase/firestore'
-import { db, auth } from './config'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, auth, storage } from './config'
 import { ensureAnonymousAuth } from './authService'
+import { callMLMatchingAPI } from '../services/mlService'
 
 const COL = 'missing_persons'
 
@@ -29,33 +31,21 @@ export function generateRefId() {
   return 'FM-' + Math.random().toString(36).slice(2, 8).toUpperCase()
 }
 
-// ── Levenshtein distance for fuzzy name matching ──────────────────────────
-function levenshtein(a, b) {
-  if (!a || !b) return 99
-  a = a.toLowerCase(); b = b.toLowerCase()
-  const m = a.length, n = b.length
-  const dp = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  )
-  for (let i = 1; i <= m; i++)
-    for (let j = 1; j <= n; j++)
-      dp[i][j] = a[i-1] === b[j-1]
-        ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1])
-  return dp[m][n]
-}
-
 // ── Check for possible duplicate reports (replaces deduplicateReport CF) ──
-// Returns up to 5 existing records with similar names.
+// Returns up to 5 existing records with similar names (basic prefix filter;
+// deeper fuzzy dedup is handled server-side by the ML engine).
 export async function checkDuplicates(name) {
   if (!name || name.length < 3) return []
   const snap = await getDocs(
     query(collection(db, COL), where('status', '==', 'missing'), limit(200))
   )
+  const term = name.toLowerCase()
   const matches = []
   snap.forEach((d) => {
     const data = d.data()
-    if (levenshtein(name, data.name || '') <= 3) {
+    const candidate = (data.name || '').toLowerCase()
+    // Keep candidates that share at least the first 3 characters
+    if (candidate.startsWith(term.slice(0, 3))) {
       matches.push({
         id: d.id,
         name: data.name,
@@ -67,75 +57,121 @@ export async function checkDuplicates(name) {
   return matches.slice(0, 5)
 }
 
-// ── Score match between a missing and found person ────────────────────────
-function scoreMatch(missing, found) {
-  let score = 0
-  const dist = levenshtein(missing.name, found.name)
-  const nameLen = Math.max((missing.name || '').length, (found.name || '').length, 1)
-  score += Math.max(0, 50 - (dist / nameLen) * 50)
-  if (missing.lastKnownLocation?.district &&
-      found.lastKnownLocation?.district &&
-      missing.lastKnownLocation.district === found.lastKnownLocation.district) score += 20
-  if (missing.gender && found.gender && missing.gender === found.gender) score += 15
-  const mAge = parseInt(missing.age), fAge = parseInt(found.age)
-  if (!isNaN(mAge) && !isNaN(fAge)) score += Math.max(0, 15 - Math.abs(mAge - fAge) * 2)
-  return Math.round(Math.min(score, 99))
+// ── Map a Firestore found-person document to a ML API PersonRecord ─────────
+function toPersonRecord(id, data) {
+  // Build a GeoPoint only when both lat/lng are valid numbers
+  let location = null
+  const lat = parseFloat(data.location?.latitude ?? data.lastKnownLocation?.latitude)
+  const lng = parseFloat(data.location?.longitude ?? data.lastKnownLocation?.longitude)
+  if (!isNaN(lat) && !isNaN(lng)) {
+    location = { latitude: lat, longitude: lng }
+  }
+
+  return {
+    id,
+    name: data.name || null,
+    age: parseInt(data.age) || null,
+    gender: data.gender || null,
+    location,
+    physical_tags: Array.isArray(data.physicalTags) ? data.physicalTags : [],
+    photo_url: data.photoUrl || null,
+  }
 }
 
-// ── Run matching engine client-side after report submission ───────────────
+// ── Run matching engine — delegates scoring to the FastAPI ML backend ──────
 async function runMatchingEngine(docId, reportData) {
   try {
+    // 1. Fetch all found-person candidates from Firestore
     const foundSnap = await getDocs(collection(db, 'found_persons'))
-    let bestScore = 0
-    let bestMatchId = null
-    foundSnap.forEach((d) => {
-      const score = scoreMatch(reportData, d.data())
-      if (score > bestScore) { bestScore = score; bestMatchId = d.id }
-    })
-
-    // ── Step 1: Create rescue task (do this FIRST so it always runs) ──────
-    if (bestScore < 40) {
-      try {
-        await addDoc(collection(db, 'tasks'), {
-          name: reportData.name || 'Unknown',
-          priority: 'HIGH',
-          location: reportData.lastKnownLocation?.description || reportData.lastKnownLocation?.district || 'Unknown',
-          district: reportData.lastKnownLocation?.district || null,
-          team: 'Unassigned',
-          status: 'open',
-          missingPersonId: docId,
-          notes: 'Auto-created: no match found.',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        })
-      } catch (taskErr) {
-        console.warn('[DisasterIQ] Task creation error:', taskErr)
-      }
+    if (foundSnap.empty) {
+      console.info('[DisasterIQ] No found-person candidates; skipping ML match.')
+      // Still create a rescue task and update stats when there are no candidates
+      await _createRescueTask(docId, reportData, null, 0)
+      await _updateStats()
+      return
     }
 
-    // ── Step 2: Update confidence score on the report ─────────────────────
+    // 2. Shape the "found" subject (the newly submitted missing-person report)
+    //    into a PersonRecord the API understands.
+    const subjectRecord = toPersonRecord(docId, reportData)
+
+    // 3. Shape every found-person Firestore document into a PersonRecord array
+    const candidatesList = foundSnap.docs.map((d) => toPersonRecord(d.id, d.data()))
+
+    // 4. Call the ML API
+    let topScore = 0
+    let topMatchId = null
+    try {
+      const apiResponse = await callMLMatchingAPI(subjectRecord, candidatesList)
+      const topMatch = apiResponse.matches?.[0]
+      if (topMatch) {
+        topScore = topMatch.composite_score   // float [0, 1] from the API
+        topMatchId = topMatch.missing_person_id
+      }
+    } catch (apiErr) {
+      console.warn('[DisasterIQ] ML API call failed (falling back to no-match):', apiErr)
+      // Non-fatal — continue to create task and write stats
+    }
+
+    // 5. Create a rescue task when no confident match was found
+    //    (API composite_score threshold: 0.40 mirrors the old 40/100 threshold)
+    await _createRescueTask(docId, reportData, topMatchId, topScore)
+
+    // 6. Persist composite_score and matched found-person id back to Firestore
     try {
       await updateDoc(doc(db, COL, docId), {
-        confidence: bestScore,
-        matchedWith: bestScore >= 40 ? bestMatchId : null,
+        composite_score: topScore,
+        found_person_id: topScore >= 0.40 ? topMatchId : null,
         updatedAt: serverTimestamp(),
       })
     } catch (updateErr) {
-      console.warn('[DisasterIQ] Confidence update error (non-critical):', updateErr)
+      console.warn('[DisasterIQ] Score update error (non-critical):', updateErr)
     }
 
-    // ── Step 3: Update global stats ───────────────────────────────────────
-    try {
-      await setDoc(doc(db, 'stats', 'global'), {
-        missing: increment(1),
-        updatedAt: serverTimestamp(),
-      }, { merge: true })
-    } catch (statsErr) {
-      console.warn('[DisasterIQ] Stats update error (non-critical):', statsErr)
-    }
+    // 7. Increment global stats
+    await _updateStats()
 
   } catch (err) {
     console.warn('[DisasterIQ] Matching engine error (non-critical):', err)
+  }
+}
+
+// ── Internal: create a rescue task when no match clears the threshold ──────
+async function _createRescueTask(docId, reportData, matchId, score) {
+  if (score >= 0.40) return   // confident match found — no rescue task needed
+  try {
+    await addDoc(collection(db, 'tasks'), {
+      name: reportData.name || 'Unknown',
+      priority: 'HIGH',
+      location:
+        reportData.lastKnownLocation?.description ||
+        reportData.lastKnownLocation?.district ||
+        'Unknown',
+      district: reportData.lastKnownLocation?.district || null,
+      team: 'Unassigned',
+      status: 'open',
+      missingPersonId: docId,
+      photoUrl: reportData.photoUrl || null,
+      description: reportData.description || null,
+      notes: 'Auto-created: no confident ML match found.',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  } catch (taskErr) {
+    console.warn('[DisasterIQ] Task creation error:', taskErr)
+  }
+}
+
+// ── Internal: bump global missing-person counter ──────────────────────────
+async function _updateStats() {
+  try {
+    await setDoc(
+      doc(db, 'stats', 'global'),
+      { missing: increment(1), updatedAt: serverTimestamp() },
+      { merge: true },
+    )
+  } catch (statsErr) {
+    console.warn('[DisasterIQ] Stats update error (non-critical):', statsErr)
   }
 }
 
@@ -158,7 +194,38 @@ export async function submitMissingPersonReport(formData) {
   await ensureAnonymousAuth()
   checkRateLimit()
 
+  let lat = null, lng = null
+  const locStr = [formData.location?.trim(), formData.district === 'Other' ? formData.customDistrict : formData.district, formData.state, 'India'].filter(Boolean).join(', ')
+  if (locStr) {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locStr)}&limit=1`, { headers: { 'Accept-Language': 'en' } })
+      const data = await res.json()
+      if (data && data.length > 0) {
+        lat = parseFloat(data[0].lat)
+        lng = parseFloat(data[0].lon)
+      }
+    } catch (err) {
+      console.warn('Geocoding error', err)
+    }
+  }
+
   const refId = generateRefId()
+
+  let photoUrl = null
+  if (formData.photoFile) {
+    try {
+      const fileExt = formData.photoFile.name.split('.').pop() || 'jpg'
+      const fileName = `missing_persons/${refId}/photo_${Math.random().toString(36).substring(2)}.${fileExt}`
+      const storageRef = ref(storage, fileName)
+      const metadata = { contentType: formData.photoFile.type }
+      storage.maxUploadRetryTime = 3000
+      await uploadBytes(storageRef, formData.photoFile, metadata)
+      photoUrl = await getDownloadURL(storageRef)
+    } catch (storageErr) {
+      console.warn('Storage upload failed, proceeding without photo:', storageErr)
+    }
+  }
+
   const payload = {
     refId,
     name: formData.name?.trim() || 'Unknown',
@@ -168,11 +235,13 @@ export async function submitMissingPersonReport(formData) {
     lastKnownLocation: {
       description: formData.location?.trim() || null,
       district: formData.district || null,
+      latitude: lat,
+      longitude: lng,
       dateLastSeen: formData.date || null,
       timeLastSeen: formData.time || null,
     },
     description: formData.description?.trim() || null,
-    photoUrl: null,
+    photoUrl: photoUrl,
     reporterContact: {
       phone: formData.phone?.trim() || null,
       altPhone: formData.altPhone?.trim() || null,

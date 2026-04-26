@@ -8,6 +8,7 @@ import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -23,12 +24,14 @@ const app = initializeApp(firebaseConfig)
 
 export const db = getFirestore(app)
 export const auth = getAuth(app)
+export const storage = getStorage(app)
 export const analytics = getAnalytics(app)
 
 // ── Local emulator bindings (only active in dev when USE_EMULATOR=true) ──
 if (import.meta.env.VITE_USE_EMULATOR === 'true') {
   connectFirestoreEmulator(db, 'localhost', 8080)
   connectAuthEmulator(auth, 'http://localhost:9099')
+  connectStorageEmulator(storage, 'localhost', 9199)
   console.log('[DisasterIQ] 🔧 Running against local Firebase Emulator Suite')
 }
 

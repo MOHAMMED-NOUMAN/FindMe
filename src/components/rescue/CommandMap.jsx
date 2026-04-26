@@ -1,183 +1,208 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Maximize2, PenTool, Layers, MapPin, UserCheck, Shield, Tent, Flame } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+import { collection, onSnapshot } from 'firebase/firestore'
+import { db } from '../../firebase/config'
 import MapControls from './MapControls'
+import indiaData from '../../data/indiaStatesDistricts.json'
 
-const mapLayers = [
-  { id: 'missing', label: 'Missing Persons', icon: MapPin, color: 'bg-red-500', dotColor: 'bg-red-400' },
-  { id: 'found', label: 'Found Persons', icon: UserCheck, color: 'bg-emerald-500', dotColor: 'bg-emerald-400' },
-  { id: 'teams', label: 'Rescue Teams', icon: Shield, color: 'bg-blue-500', dotColor: 'bg-blue-400' },
-  { id: 'camps', label: 'Relief Camps', icon: Tent, color: 'bg-orange-500', dotColor: 'bg-orange-400' },
-  { id: 'heatmap', label: 'Probability Heatmap', icon: Flame, color: 'bg-purple-500', dotColor: 'bg-purple-400' },
-]
+const STATE_COORDS = {
+  "Andhra Pradesh": [15.9129, 79.7400],
+  "Arunachal Pradesh": [28.2180, 94.7278],
+  "Assam": [26.2006, 92.9376],
+  "Bihar": [25.0961, 85.3131],
+  "Chhattisgarh": [21.2787, 81.8661],
+  "Goa": [15.2993, 74.1240],
+  "Gujarat": [22.2587, 71.1924],
+  "Haryana": [29.0588, 76.0856],
+  "Himachal Pradesh": [31.1048, 77.1734],
+  "Jharkhand": [23.6102, 85.2799],
+  "Karnataka": [15.3173, 75.7139],
+  "Kerala": [10.8505, 76.2711],
+  "Madhya Pradesh": [22.9734, 78.6569],
+  "Maharashtra": [19.7515, 75.7139],
+  "Manipur": [24.6637, 93.9063],
+  "Meghalaya": [25.4670, 91.3662],
+  "Mizoram": [23.1645, 92.9376],
+  "Nagaland": [26.1584, 94.5624],
+  "Odisha": [20.9517, 85.0985],
+  "Punjab": [31.1471, 75.3412],
+  "Rajasthan": [27.0238, 74.2179],
+  "Sikkim": [27.5330, 88.5122],
+  "Tamil Nadu": [11.1271, 78.6569],
+  "Telangana": [18.1124, 79.0193],
+  "Tripura": [23.9408, 91.9882],
+  "Uttar Pradesh": [26.8467, 80.9462],
+  "Uttarakhand": [30.0668, 79.0193],
+  "West Bengal": [22.9868, 87.8550],
+  "Andaman and Nicobar Islands": [11.7401, 92.6586],
+  "Chandigarh": [30.7333, 76.7794],
+  "Dadra and Nagar Haveli and Daman and Diu": [20.1809, 73.0169],
+  "Delhi": [28.7041, 77.1025],
+  "Jammu and Kashmir": [33.7782, 76.5762],
+  "Ladakh": [34.1526, 77.5771],
+  "Lakshadweep": [10.5667, 72.6417],
+  "Puducherry": [11.9416, 79.8083]
+}
 
-/* Fake map markers for visual realism */
-const fakeMarkers = [
-  { x: 25, y: 30, type: 'missing', pulse: true },
-  { x: 40, y: 55, type: 'missing', pulse: true },
-  { x: 60, y: 20, type: 'found', pulse: false },
-  { x: 72, y: 45, type: 'teams', pulse: true },
-  { x: 35, y: 70, type: 'teams', pulse: true },
-  { x: 55, y: 65, type: 'camps', pulse: false },
-  { x: 18, y: 50, type: 'camps', pulse: false },
-  { x: 80, y: 35, type: 'missing', pulse: true },
-  { x: 48, y: 40, type: 'found', pulse: false },
-]
+function getStateForDistrict(districtName) {
+  if (!districtName) return null;
+  for (const s of indiaData.states) {
+    if (s.districts.includes(districtName)) return s.name;
+  }
+  for (const u of indiaData.union_territories) {
+    if (u.districts.includes(districtName)) return u.name;
+  }
+  return null;
+}
 
-const markerColors = {
-  missing: 'bg-red-500',
-  found: 'bg-emerald-500',
-  teams: 'bg-blue-500',
-  camps: 'bg-orange-500',
+// Custom icons
+const missingIcon = L.divIcon({
+  html: `<div style="width: 14px; height: 14px; background-color: #ef4444; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4);"></div>`,
+  className: '',
+  iconSize: [14, 14]
+})
+const foundIcon = L.divIcon({
+  html: `<div style="width: 14px; height: 14px; background-color: #10b981; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4);"></div>`,
+  className: '',
+  iconSize: [14, 14]
+})
+
+function MapUpdater({ selectedState }) {
+  const map = useMap();
+  useEffect(() => {
+    if (selectedState && selectedState !== 'All' && STATE_COORDS[selectedState]) {
+      map.setView(STATE_COORDS[selectedState], 6, { animate: true });
+    } else {
+      map.setView([22.5937, 78.9629], 5, { animate: true });
+    }
+  }, [selectedState, map]);
+  return null;
 }
 
 export default function CommandMap() {
-  const [activeLayers, setActiveLayers] = useState(['missing', 'found', 'teams', 'camps'])
-  const [showLegend, setShowLegend] = useState(true)
+  const [missing, setMissing] = useState([])
+  const [found, setFound] = useState([])
+  
+  const [selectedState, setSelectedState] = useState('All')
+  const [selectedDistrict, setSelectedDistrict] = useState('All')
 
-  const toggleLayer = (id) => {
-    setActiveLayers((prev) =>
-      prev.includes(id) ? prev.filter((l) => l !== id) : [...prev, id]
-    )
-  }
+  // Load missing persons
+  useEffect(() => {
+    return onSnapshot(collection(db, 'missing_persons'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const withCoords = data.map(p => {
+        const dist = p.lastKnownLocation?.district
+        const st = getStateForDistrict(dist)
+        const base = STATE_COORDS[st] || [22.5937, 78.9629]
+        // Pseudo-random offset based on ID so markers don't overlap entirely and scatter within state
+        const seed1 = p.id.charCodeAt(0) / 255
+        const seed2 = p.id.charCodeAt(p.id.length-1) / 255
+        return {
+          ...p,
+          state: st,
+          lat: base[0] + (seed1 - 0.5) * 2,
+          lng: base[1] + (seed2 - 0.5) * 2
+        }
+      })
+      setMissing(withCoords)
+    })
+  }, [])
+
+  // Load found persons
+  useEffect(() => {
+    return onSnapshot(collection(db, 'found_persons'), (snap) => {
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      const withCoords = data.map(p => {
+        const dist = p.location?.district
+        const st = getStateForDistrict(dist)
+        const base = STATE_COORDS[st] || [22.5937, 78.9629]
+        const seed1 = p.id.charCodeAt(0) / 255
+        const seed2 = p.id.charCodeAt(p.id.length-1) / 255
+        return {
+          ...p,
+          state: st,
+          lat: base[0] + (seed1 - 0.5) * 2,
+          lng: base[1] + (seed2 - 0.5) * 2
+        }
+      })
+      setFound(withCoords)
+    })
+  }, [])
+
+  const visibleMissing = missing.filter(m => {
+    if (selectedState !== 'All' && m.state !== selectedState) return false;
+    if (selectedDistrict !== 'All' && m.lastKnownLocation?.district !== selectedDistrict) return false;
+    return true;
+  })
+
+  const visibleFound = found.filter(f => {
+    if (selectedState !== 'All' && f.state !== selectedState) return false;
+    if (selectedDistrict !== 'All' && f.location?.district !== selectedDistrict) return false;
+    return true;
+  })
 
   return (
-    <div className="flex flex-col h-full" style={{ fontFamily: 'var(--font-body)' }}>
-
-      {/* Top filter bar */}
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-white/60 backdrop-blur-sm border-b border-slate-200/60">
-        <MapControls />
-        <div className="flex items-center gap-1.5 shrink-0">
-          <button
-            onClick={() => setShowLegend((v) => !v)}
-            className={`h-7 flex items-center gap-1.5 text-[11px] font-semibold rounded-lg px-2.5 border transition-colors ${showLegend ? 'bg-[#1E3A8A]/5 border-[#1E3A8A]/20 text-[#1E3A8A]' : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}
-          >
-            <Layers className="w-3.5 h-3.5" /> Layers
-          </button>
-          <button className="h-7 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5 rounded-lg px-2.5 border border-slate-200 transition-colors">
-            <PenTool className="w-3.5 h-3.5" /> Draw Zone
-          </button>
-          <button className="h-7 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5 rounded-lg px-2.5 border border-slate-200 transition-colors">
-            <Maximize2 className="w-3.5 h-3.5" /> Full Screen
-          </button>
-        </div>
+    <div className="flex flex-col h-full bg-white relative">
+      <div className="flex items-center gap-3 px-4 py-3 bg-white shadow-sm z-10 border-b border-slate-100">
+        <MapControls 
+          selectedState={selectedState} 
+          setSelectedState={setSelectedState}
+          selectedDistrict={selectedDistrict}
+          setSelectedDistrict={setSelectedDistrict}
+        />
       </div>
 
-      {/* Map area */}
-      <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-[#E0F2FE] via-[#DBEAFE] to-[#C7D2FE]">
-
-        {/* Simulated grid lines for map feel */}
-        <svg className="absolute inset-0 w-full h-full opacity-[0.08]" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1E3A8A" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
-
-        {/* Simulated terrain patches */}
-        <div className="absolute inset-0">
-          <div className="absolute w-48 h-48 bg-emerald-300/15 rounded-full blur-3xl top-[15%] left-[20%]" />
-          <div className="absolute w-64 h-64 bg-blue-300/20 rounded-full blur-3xl top-[40%] left-[50%]" />
-          <div className="absolute w-40 h-40 bg-emerald-400/10 rounded-full blur-3xl top-[60%] left-[10%]" />
-          <div className="absolute w-56 h-56 bg-teal-300/10 rounded-full blur-3xl top-[20%] left-[65%]" />
-        </div>
-
-        {/* Simulated river */}
-        <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M 10 15 Q 30 25 25 45 Q 20 65 40 80 Q 50 90 60 95" fill="none" stroke="#3B82F6" strokeWidth="0.8" strokeLinecap="round" />
-          <path d="M 65 5 Q 55 20 60 35 Q 65 50 50 60" fill="none" stroke="#3B82F6" strokeWidth="0.5" strokeLinecap="round" />
-        </svg>
-
-        {/* Simulated road */}
-        <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M 5 50 L 95 50" fill="none" stroke="#475569" strokeWidth="0.4" strokeDasharray="2,1" />
-          <path d="M 50 5 L 50 95" fill="none" stroke="#475569" strokeWidth="0.4" strokeDasharray="2,1" />
-        </svg>
-
-        {/* Heatmap overlay */}
-        <AnimatePresence>
-          {activeLayers.includes('heatmap') && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0"
-            >
-              <div className="absolute w-44 h-44 bg-red-500/20 rounded-full blur-3xl top-[20%] left-[20%]" />
-              <div className="absolute w-56 h-56 bg-red-400/15 rounded-full blur-3xl top-[35%] left-[55%]" />
-              <div className="absolute w-36 h-36 bg-orange-400/20 rounded-full blur-3xl top-[55%] left-[30%]" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Fake markers */}
-        {fakeMarkers
-          .filter((m) => activeLayers.includes(m.type))
-          .map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: i * 0.05, type: 'spring', stiffness: 300 }}
-              className="absolute"
-              style={{ left: `${m.x}%`, top: `${m.y}%` }}
-            >
-              <div className="relative">
-                <div className={`w-3 h-3 rounded-full ${markerColors[m.type]} shadow-lg`} />
-                {m.pulse && (
-                  <div className={`absolute inset-0 w-3 h-3 rounded-full ${markerColors[m.type]} animate-ping opacity-40`} />
-                )}
-              </div>
-            </motion.div>
+      <div className="flex-1 relative z-0">
+        <MapContainer center={[22.5937, 78.9629]} zoom={5} style={{ height: '100%', width: '100%' }}>
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          />
+          <MapUpdater selectedState={selectedState} />
+          
+          {visibleMissing.map(m => (
+            <Marker key={m.id} position={[m.lat, m.lng]} icon={missingIcon}>
+              <Popup>
+                <div className="text-sm" style={{ fontFamily: 'var(--font-body)' }}>
+                  <strong className="text-red-600 block mb-1 uppercase text-[10px] tracking-wider">Missing Person</strong>
+                  <b className="text-sm text-slate-900">{m.name || 'Unknown'}</b> <span className="text-slate-500">({m.age ? m.age + 'y' : 'Age unknown'})</span><br/>
+                  <span className="text-slate-600 block mt-1">{m.lastKnownLocation?.description || 'Location unknown'}</span>
+                  <span className="text-slate-400 text-xs">{m.lastKnownLocation?.district || 'District unknown'}</span>
+                </div>
+              </Popup>
+            </Marker>
           ))}
 
-        {/* Title overlay */}
-        <div className="absolute top-4 left-4">
-          <div className="bg-white/80 backdrop-blur-md rounded-xl px-4 py-2 border border-slate-200/60 shadow-sm">
-            <h2 className="text-sm font-bold text-slate-800">Command Map</h2>
-            <p className="text-[10px] text-slate-500">Kerala — Live Operations View</p>
+          {visibleFound.map(f => (
+            <Marker key={f.id} position={[f.lat, f.lng]} icon={foundIcon}>
+              <Popup>
+                <div className="text-sm" style={{ fontFamily: 'var(--font-body)' }}>
+                  <strong className="text-emerald-600 block mb-1 uppercase text-[10px] tracking-wider">Found Person</strong>
+                  <b className="text-sm text-slate-900">{f.name || 'Unknown'}</b> <span className="text-slate-500">({f.age ? f.age + 'y' : 'Age unknown'})</span><br/>
+                  <span className="text-slate-600 block mt-1">{f.location?.description || 'Location unknown'}</span>
+                  <span className="text-slate-400 text-xs">{f.location?.district || 'District unknown'}</span>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+        
+        {/* Simple Legend */}
+        <div className="absolute bottom-6 left-6 z-[400] bg-white/95 backdrop-blur rounded-xl shadow-lg shadow-black/5 p-4 border border-slate-200" style={{ fontFamily: 'var(--font-body)' }}>
+          <h4 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Live Map Filter</h4>
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-red-500 border-2 border-white shadow-sm" />
+              <span className="text-xs text-slate-600 font-semibold tracking-wide">Missing Persons ({visibleMissing.length})</span>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+              <span className="text-xs text-slate-600 font-semibold tracking-wide">Found Persons ({visibleFound.length})</span>
+            </div>
           </div>
         </div>
-
-        {/* Coordinates overlay */}
-        <div className="absolute bottom-3 right-3">
-          <div className="bg-black/40 backdrop-blur-sm rounded-md px-2 py-1">
-            <span className="text-[10px] font-mono text-white/80">11.2588° N, 75.7804° E</span>
-          </div>
-        </div>
-
-        {/* Layer legend */}
-        <AnimatePresence>
-          {showLegend && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
-              className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md rounded-xl border border-slate-200/60 shadow-sm p-3 space-y-1.5"
-            >
-              {mapLayers.map((layer) => {
-                const isActive = activeLayers.includes(layer.id)
-                return (
-                  <button
-                    key={layer.id}
-                    onClick={() => toggleLayer(layer.id)}
-                    className={`flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[11px] font-semibold transition-all ${
-                      isActive
-                        ? 'text-slate-700'
-                        : 'text-slate-400 opacity-60'
-                    } hover:bg-slate-50`}
-                  >
-                    <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isActive ? layer.dotColor : 'bg-slate-300'}`} />
-                    {layer.label}
-                  </button>
-                )
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   )

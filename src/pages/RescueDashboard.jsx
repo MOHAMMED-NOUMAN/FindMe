@@ -4,6 +4,7 @@ import { AlertTriangle, UserX, LogOut, ShieldCheck, Loader2 } from 'lucide-react
 import CommandMap from '../components/rescue/CommandMap'
 import TaskBoard from '../components/rescue/TaskBoard'
 import KPIBar from '../components/rescue/KPIBar'
+import AIMatchResults from '../components/AIMatchResults'
 import { subscribeCriticalAlerts, subscribeUnassignedCount } from '../firebase/tasks'
 import { signInWithGoogle, signOutUser, onAuthChange } from '../firebase/authService'
 
@@ -171,6 +172,8 @@ export default function RescueDashboard() {
                 ))}
               </div>
             )}
+
+            <AIMatchResults />
 
             <TaskBoard />
           </div>

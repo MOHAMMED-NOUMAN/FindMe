@@ -4,6 +4,8 @@ import Home from './pages/Home'
 import SearchPage from './pages/SearchPage'
 import ReportPage from './pages/ReportPage'
 import RescueDashboard from './pages/RescueDashboard'
+import MatchResultsPage from './pages/MatchResultsPage'
+import ReportFoundPage from './pages/ReportFoundPage'
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/report" element={<ReportPage />} />
             <Route path="/rescue" element={<RescueDashboard />} />
+            <Route path="/results/:reportId" element={<MatchResultsPage />} />
+            <Route path="/report-found" element={<ReportFoundPage />} />
           </Routes>
         </main>
       </div>

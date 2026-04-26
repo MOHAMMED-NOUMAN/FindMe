@@ -52,10 +52,9 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // ── found_persons ────────────────────────────────────────────────────
     match /found_persons/{docId} {
       allow read: if true;
-      allow create: if isRescueTeam();
+      allow create: if isSignedIn();
       allow update: if isRescueTeam();
       allow delete: if isAdmin();
     }

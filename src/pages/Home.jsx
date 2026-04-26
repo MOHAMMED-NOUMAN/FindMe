@@ -3,7 +3,6 @@ import QuickStats from '../components/QuickStats'
 import AlertsBar from '../components/AlertsBar'
 import QuickActions from '../components/QuickActions'
 import ReportMissingPanel from '../components/ReportMissingPanel'
-import AIMatchResults from '../components/AIMatchResults'
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
       <div className="mt-4">
         <ReportMissingPanel />
       </div>
-      <AIMatchResults />
     </>
   )
 }
