@@ -1,0 +1,53 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "missing_persons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "missing_persons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "reporterContact.phone", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "missing_persons",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "lastKnownLocation.district", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "priority", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "tasks",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notification_subscriptions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "missingPersonId", "order": "ASCENDING" },
+        { "fieldPath": "phone", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

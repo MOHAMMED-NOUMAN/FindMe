@@ -1,0 +1,121 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ─────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isRescueTeam() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+          in ['rescue', 'coordinator', 'admin'];
+    }
+
+    function isCoordinator() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+          in ['coordinator', 'admin'];
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── missing_persons ──────────────────────────────────────────────────
+    // Public can read (search). Authenticated phone users can create.
+    // Only rescue/coordinator/admin can update status.
+    match /missing_persons/{docId} {
+      allow read: if true;
+
+      // Anonymous auth users can submit reports (free, no SMS cost)
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['name', 'reporterContact', 'status'])
+        && request.resource.data.status == 'missing';
+
+      allow update: if isRescueTeam()
+        || (isSignedIn()
+            && request.auth.uid == resource.data.reporterUid
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['description', 'photoUrl', 'updatedAt']));
+
+      allow delete: if isAdmin();
+    }
+
+    // ── found_persons ────────────────────────────────────────────────────
+    match /found_persons/{docId} {
+      allow read: if true;
+      allow create: if isRescueTeam();
+      allow update: if isRescueTeam();
+      allow delete: if isAdmin();
+    }
+
+    // ── tasks ────────────────────────────────────────────────────────────
+    // Rescue & coordinator can read+write.
+    // Any signed-in user (incl. anonymous) can CREATE tasks — the client-side
+    // matching engine auto-creates them after a missing person report (Spark plan,
+    // no Cloud Functions). Coordinators can delete.
+    match /tasks/{docId} {
+      allow read: if isRescueTeam();
+      allow create: if isSignedIn();   // matching engine runs as anonymous auth
+      allow update: if isRescueTeam();
+      allow delete: if isCoordinator();
+    }
+
+    // ── teams ────────────────────────────────────────────────────────────
+    match /teams/{docId} {
+      allow read: if isRescueTeam();
+      allow write: if isCoordinator();
+    }
+
+    // ── camps ────────────────────────────────────────────────────────────
+    match /camps/{docId} {
+      allow read: if true;
+      allow write: if isCoordinator();
+    }
+
+    // ── stats ─────────────────────────────────────────────────────────────
+    // Public read for banner stats.
+    // On Spark plan (no Cloud Functions), signed-in clients update stats
+    // directly from the client-side matching engine after each report.
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();  // matching engine & status updates run client-side
+    }
+
+    // ── notification_subscriptions ────────────────────────────────────────
+    // Any signed-in user (including anonymous) can create a subscription.
+    match /notification_subscriptions/{docId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    // ── users ────────────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if isAdmin();
+    }
+
+    // ── ivr_reports ──────────────────────────────────────────────────────
+    // IVR webhook (Cloud Function) writes these. Admin reads only.
+    match /ivr_reports/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ── conflicts ────────────────────────────────────────────────────────
+    match /conflicts/{docId} {
+      allow read: if isCoordinator();
+      allow write: if false;  // Cloud Functions only
+    }
+
+    // ── disasters ────────────────────────────────────────────────────────
+    match /disasters/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

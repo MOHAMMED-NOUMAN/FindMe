@@ -1,14 +1,56 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Siren, Timer } from 'lucide-react'
-
-const kpis = [
-  { label: 'Total Missing', value: '1,204', icon: Users, color: 'text-red-500', bg: 'bg-red-500/10', trend: '+12 today' },
-  { label: 'Total Found', value: '847', icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-500/10', trend: '+38 today' },
-  { label: 'Active Rescues', value: '56', icon: Siren, color: 'text-blue-600', bg: 'bg-blue-500/10', trend: '8 en route' },
-  { label: 'Avg Resolution', value: '4.2h', icon: Timer, color: 'text-amber-600', bg: 'bg-amber-500/10', trend: '↓ 0.3h' },
-]
+import { subscribeGlobalStats } from '../../firebase/stats'
 
 export default function KPIBar() {
+  const [stats, setStats] = useState({
+    missing: 0,
+    found: 0,
+    activeRescues: 0,
+    avgResolutionHours: null,
+  })
+
+  useEffect(() => {
+    const unsub = subscribeGlobalStats((data) => setStats(data))
+    return () => unsub()
+  }, [])
+
+  const kpis = [
+    {
+      label: 'Total Missing',
+      value: stats.missing?.toLocaleString() ?? '—',
+      icon: Users,
+      color: 'text-red-500',
+      bg: 'bg-red-500/10',
+      trend: 'Live count',
+    },
+    {
+      label: 'Total Found',
+      value: stats.found?.toLocaleString() ?? '—',
+      icon: UserCheck,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-500/10',
+      trend: 'Live count',
+    },
+    {
+      label: 'Active Rescues',
+      value: stats.activeRescues?.toLocaleString() ?? '—',
+      icon: Siren,
+      color: 'text-blue-600',
+      bg: 'bg-blue-500/10',
+      trend: 'En route + on scene',
+    },
+    {
+      label: 'Avg Resolution',
+      value: stats.avgResolutionHours != null ? `${stats.avgResolutionHours}h` : '—',
+      icon: Timer,
+      color: 'text-amber-600',
+      bg: 'bg-amber-500/10',
+      trend: 'Hours to resolve',
+    },
+  ]
+
   return (
     <div className="grid grid-cols-4 gap-2" style={{ fontFamily: 'var(--font-body)' }}>
       {kpis.map((k, i) => (

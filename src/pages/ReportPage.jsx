@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react'
+import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
+import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
 
 const STEPS = [
   { title: 'Person Details', icon: User },
@@ -8,8 +9,6 @@ const STEPS = [
   { title: 'Photos & Description', icon: Camera },
   { title: 'Your Contact', icon: Phone },
 ]
-
-const MOCK_MATCHES = ['Rajan Kumar, 62, Kozhikode', 'Raj M., 58, Wayanad']
 
 function StepIndicator({ current }) {
   return (
@@ -43,20 +42,39 @@ function StepIndicator({ current }) {
 }
 
 function Step1({ data, onChange }) {
-  const [showMatches, setShowMatches] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const [possibleMatches, setPossibleMatches] = useState([])
+
+  const handleNameChange = async (val) => {
+    onChange('name', val)
+    if (val.length < 3) { setPossibleMatches([]); return }
+    setChecking(true)
+    try {
+      const matches = await checkDuplicates(val)
+      setPossibleMatches(matches)
+    } catch {
+      // non-critical
+    } finally {
+      setChecking(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-bold text-[#0F172A] mb-2">Full Name</label>
-          <input
-            type="text" placeholder="e.g. Rajan Kumar"
-            value={data.name}
-            onChange={(e) => { onChange('name', e.target.value); setShowMatches(e.target.value.length > 2) }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
-          />
+          <div className="relative">
+            <input
+              type="text" placeholder="e.g. Rajan Kumar"
+              value={data.name}
+              onChange={(e) => handleNameChange(e.target.value)}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
+            />
+            {checking && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />}
+          </div>
           <AnimatePresence>
-            {showMatches && (
+            {possibleMatches.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
                 className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200"
@@ -65,8 +83,10 @@ function Step1({ data, onChange }) {
                   <AlertCircle className="w-3.5 h-3.5" />
                   Possible matches found — check before submitting
                 </div>
-                {MOCK_MATCHES.map((m, i) => (
-                  <p key={i} className="text-xs text-amber-800 py-0.5">• {m}</p>
+                {possibleMatches.map((m, i) => (
+                  <p key={i} className="text-xs text-amber-800 py-0.5">
+                    • {m.name}{m.age ? `, ${m.age}` : ''}{m.district ? `, ${m.district}` : ''}
+                  </p>
                 ))}
               </motion.div>
             )}
@@ -168,16 +188,37 @@ function Step2({ data, onChange }) {
 }
 
 function Step3({ data, onChange }) {
+  const [preview, setPreview] = useState(null)
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    onChange('photoFile', file)
+    setPreview(URL.createObjectURL(file))
+  }
+
   return (
     <div className="space-y-5">
       <div>
         <label className="block text-sm font-bold text-[#0F172A] mb-2">Upload Photo</label>
-        <label className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors">
-          <Camera className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-          <p className="text-sm font-medium text-slate-500">Click to upload a photo</p>
-          <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
-          <input type="file" accept="image/*" className="hidden" />
-        </label>
+        {preview ? (
+          <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-200">
+            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+            <button
+              onClick={() => { setPreview(null); onChange('photoFile', null) }}
+              className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5"
+            >
+              <X className="w-3 h-3 text-white" />
+            </button>
+          </div>
+        ) : (
+          <label className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors">
+            <Camera className="w-8 h-8 mx-auto mb-2 text-slate-400" />
+            <p className="text-sm font-medium text-slate-500">Click to upload a photo</p>
+            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+            <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          </label>
+        )}
       </div>
       <div>
         <label className="block text-sm font-bold text-[#0F172A] mb-2">Physical Description</label>
@@ -207,7 +248,7 @@ function Step4({ data, onChange }) {
             className="w-full pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           />
         </div>
-        <p className="text-xs text-slate-400 mt-1.5">We'll send an OTP to verify your number</p>
+        <p className="text-xs text-slate-400 mt-1.5">Rescue teams will use this to contact you with updates</p>
       </div>
       <div>
         <label className="block text-sm font-bold text-[#0F172A] mb-2">Alternate Contact (optional)</label>
@@ -233,7 +274,7 @@ function Step4({ data, onChange }) {
   )
 }
 
-function Confirmation({ refId }) {
+function Confirmation({ refId, personName }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -247,7 +288,7 @@ function Confirmation({ refId }) {
         Report Submitted
       </h2>
       <p className="text-[#475569] max-w-sm mx-auto text-sm leading-relaxed">
-        Your report has been received. Our team will begin searching and contact you with any updates.
+        Your report for <strong>{personName}</strong> has been received. Our team will begin searching and contact you with any updates.
       </p>
       <div className="bg-[#1E3A8A]/5 border border-[#1E3A8A]/10 rounded-xl px-6 py-4 inline-block">
         <p className="text-xs text-[#475569] font-medium uppercase tracking-wide mb-1">Reference ID</p>
@@ -261,12 +302,15 @@ function Confirmation({ refId }) {
 export default function ReportPage() {
   const [step, setStep] = useState(0)
   const [submitted, setSubmitted] = useState(false)
-  const [refId] = useState(() => 'FM-' + Math.random().toString(36).slice(2,8).toUpperCase())
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState(null)
+  const [refId, setRefId] = useState('')
 
   const [form, setForm] = useState({
     name: '', age: '', gender: '', relationship: '',
     location: '', date: '', time: '', district: '',
     description: '',
+    photoFile: null,
     phone: '', altPhone: '', consent: false,
   })
 
@@ -275,7 +319,7 @@ export default function ReportPage() {
   const stepData = [
     { name: form.name, age: form.age, gender: form.gender, relationship: form.relationship },
     { location: form.location, date: form.date, time: form.time, district: form.district },
-    { description: form.description },
+    { description: form.description, photoFile: form.photoFile },
     { phone: form.phone, altPhone: form.altPhone, consent: form.consent },
   ]
 
@@ -287,9 +331,20 @@ export default function ReportPage() {
     return true
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!canNext()) return
-    setSubmitted(true)
+    setSubmitting(true)
+    setError(null)
+    try {
+      const result = await submitMissingPersonReport(form)
+      setRefId(result.refId)
+      setSubmitted(true)
+    } catch (err) {
+      console.error('Submit error:', err)
+      setError(err?.message || 'Failed to submit report. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -307,7 +362,7 @@ export default function ReportPage() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
           {submitted ? (
-            <Confirmation refId={refId} />
+            <Confirmation refId={refId} personName={form.name} />
           ) : (
             <>
               <h2 className="text-lg font-bold text-[#0F172A] mb-6 flex items-center gap-2">
@@ -316,6 +371,12 @@ export default function ReportPage() {
                 </span>
                 {STEPS[step].title}
               </h2>
+
+              {error && (
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+                  {error}
+                </div>
+              )}
 
               <AnimatePresence mode="wait">
                 <motion.div
@@ -354,13 +415,17 @@ export default function ReportPage() {
                   </motion.button>
                 ) : (
                   <motion.button
-                    whileHover={{ scale: canNext() ? 1.03 : 1 }}
-                    whileTap={{ scale: canNext() ? 0.97 : 1 }}
+                    whileHover={{ scale: canNext() && !submitting ? 1.03 : 1 }}
+                    whileTap={{ scale: canNext() && !submitting ? 0.97 : 1 }}
                     onClick={handleSubmit}
+                    disabled={submitting || !canNext()}
                     className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors
-                      ${canNext() ? 'bg-[#FB7185] hover:bg-[#f43f5e] text-white shadow-md shadow-[#FB7185]/20' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+                      ${canNext() && !submitting ? 'bg-[#FB7185] hover:bg-[#f43f5e] text-white shadow-md shadow-[#FB7185]/20' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
                   >
-                    <Check className="w-4 h-4" /> Submit Report
+                    {submitting
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
+                      : <><Check className="w-4 h-4" /> Submit Report</>
+                    }
                   </motion.button>
                 )}
               </div>

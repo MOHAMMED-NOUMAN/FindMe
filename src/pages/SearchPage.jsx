@@ -1,29 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, SlidersHorizontal, User, MapPin, ChevronDown, ChevronUp, Phone, Map, Bell } from 'lucide-react'
-
-const mockResults = [
-  {
-    id: 1, name: 'Sarah Jenkins', age: 34, gender: 'Female', district: 'Kozhikode',
-    lastSeen: 'Near River Bridge, Calicut', description: 'Wearing a blue kurta. Slightly built, shoulder-length hair. Last seen near the riverbank during evacuation.',
-    confidence: 92, photo: null,
-  },
-  {
-    id: 2, name: 'Unknown Male', age: 40, gender: 'Male', district: 'Wayanad',
-    lastSeen: 'Sector 4 Relief Camp', description: 'Brought in yesterday. Matches height and general appearance. Slight limp on right leg.',
-    confidence: 78, photo: null,
-  },
-  {
-    id: 3, name: 'Emma Mathew', age: 28, gender: 'Female', district: 'Malappuram',
-    lastSeen: 'Westside Community Clinic', description: 'Similar name reported. Physical description partially matches. Wearing green saree.',
-    confidence: 54, photo: null,
-  },
-  {
-    id: 4, name: 'Rajan Kumar', age: 62, gender: 'Male', district: 'Kozhikode',
-    lastSeen: 'Flood shelter, Town Hall', description: 'Elderly man. Grey hair, white shirt. Arrived alone. Does not recall family contact.',
-    confidence: 41, photo: null,
-  },
-]
+import { Search, SlidersHorizontal, User, MapPin, ChevronDown, ChevronUp, Phone, Map, Bell, Loader2 } from 'lucide-react'
+import { searchMissingPersons } from '../firebase/missingPersons'
+import { subscribeToPersonAlerts } from '../firebase/notifications'
 
 const getConfig = (score) => {
   if (score > 85) return { label: 'High Match', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500', action: 'Contact Rescue Team', actionStyle: 'bg-emerald-600 hover:bg-emerald-700 text-white' }
@@ -34,8 +13,29 @@ const getConfig = (score) => {
 function MatchCard({ person, index }) {
   const [expanded, setExpanded] = useState(false)
   const [notified, setNotified] = useState(false)
+  const [notifyLoading, setNotifyLoading] = useState(false)
   const [showMap, setShowMap] = useState(false)
-  const cfg = getConfig(person.confidence)
+  const cfg = getConfig(person.confidence ?? 0)
+
+  const handleNotify = async () => {
+    if (notified || notifyLoading) return
+    const phone = window.prompt('Enter your phone number to receive an alert when this person is found:')
+    if (!phone) return
+    setNotifyLoading(true)
+    try {
+      await subscribeToPersonAlerts(person.id, phone)
+      setNotified(true)
+    } catch (err) {
+      console.error('Notification error:', err)
+      alert('Could not subscribe to alerts. Please try again.')
+    } finally {
+      setNotifyLoading(false)
+    }
+  }
+
+  // Resolve nested location field from Firestore shape
+  const lastSeen = person.lastKnownLocation?.description || person.lastSeen || 'Unknown'
+  const district = person.lastKnownLocation?.district || person.district || '—'
 
   return (
     <motion.div
@@ -50,21 +50,24 @@ function MatchCard({ person, index }) {
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 text-left cursor-pointer"
       >
-        {/* Photo placeholder */}
-        <div className="w-14 h-14 rounded-full bg-[#1E3A8A]/6 border border-[#1E3A8A]/10 flex items-center justify-center shrink-0">
-          <User className="w-6 h-6 text-[#1E3A8A]/50" />
+        {/* Photo */}
+        <div className="w-14 h-14 rounded-full bg-[#1E3A8A]/6 border border-[#1E3A8A]/10 flex items-center justify-center shrink-0 overflow-hidden">
+          {person.photoUrl
+            ? <img src={person.photoUrl} alt={person.name} className="w-full h-full object-cover" />
+            : <User className="w-6 h-6 text-[#1E3A8A]/50" />
+          }
         </div>
 
         {/* Details */}
         <div className="flex-1 min-w-0" style={{ fontFamily: 'var(--font-body)' }}>
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="text-base font-bold text-[#0F172A]">{person.name}</h3>
-            <span className="text-sm text-[#475569]">Age {person.age}</span>
-            <span className="text-xs text-[#475569] bg-slate-100 px-2 py-0.5 rounded-full">{person.gender}</span>
+            {person.age && <span className="text-sm text-[#475569]">Age {person.age}</span>}
+            {person.gender && <span className="text-xs text-[#475569] bg-slate-100 px-2 py-0.5 rounded-full">{person.gender}</span>}
           </div>
           <div className="flex items-center gap-1.5 text-sm text-[#475569]">
             <MapPin className="w-3.5 h-3.5 opacity-60 shrink-0" />
-            <span className="truncate">{person.lastSeen}</span>
+            <span className="truncate">{lastSeen}</span>
           </div>
         </div>
 
@@ -72,7 +75,7 @@ function MatchCard({ person, index }) {
         <div className="flex items-center gap-3 shrink-0">
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.border}`}>
             <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
-            <span className={`text-xs font-bold ${cfg.color}`}>{person.confidence}%</span>
+            <span className={`text-xs font-bold ${cfg.color}`}>{person.confidence ?? '?'}%</span>
           </div>
           {expanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
         </div>
@@ -90,8 +93,9 @@ function MatchCard({ person, index }) {
             style={{ fontFamily: 'var(--font-body)' }}
           >
             <div className="p-5 space-y-4">
-              <p className="text-sm text-[#475569] leading-relaxed">{person.description}</p>
-              <p className="text-xs text-slate-400 font-medium">District: {person.district}</p>
+              <p className="text-sm text-[#475569] leading-relaxed">{person.description || 'No description available.'}</p>
+              <p className="text-xs text-slate-400 font-medium">District: {district}</p>
+              {person.refId && <p className="text-xs text-slate-400 font-mono">Ref: {person.refId}</p>}
 
               {/* Mini map placeholder */}
               <AnimatePresence>
@@ -104,7 +108,7 @@ function MatchCard({ person, index }) {
                   >
                     <div className="text-center text-[#475569]">
                       <Map className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                      <p className="text-xs font-medium">Location: {person.lastSeen}</p>
+                      <p className="text-xs font-medium">Location: {lastSeen}</p>
                     </div>
                   </motion.div>
                 )}
@@ -124,10 +128,16 @@ function MatchCard({ person, index }) {
                   {showMap ? 'Hide' : 'Show'} Probable Location
                 </button>
                 <button
-                  onClick={() => setNotified(true)}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${notified ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`}
+                  onClick={handleNotify}
+                  disabled={notifyLoading}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    notified ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                  }`}
                 >
-                  <Bell className="w-3.5 h-3.5 inline mr-1.5" />
+                  {notifyLoading
+                    ? <Loader2 className="w-3.5 h-3.5 inline mr-1.5 animate-spin" />
+                    : <Bell className="w-3.5 h-3.5 inline mr-1.5" />
+                  }
                   {notified ? 'Notified ✓' : 'Notify Me'}
                 </button>
               </div>
@@ -145,20 +155,26 @@ export default function SearchPage() {
   const [filters, setFilters] = useState({ age: '', district: '', gender: '' })
   const [searched, setSearched] = useState(false)
   const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
-  const handleSearch = () => {
-    const filtered = mockResults
-      .filter((p) => {
-        const q = query.toLowerCase()
-        const nameMatch = !q || p.name.toLowerCase().includes(q) || p.lastSeen.toLowerCase().includes(q)
-        const districtMatch = !filters.district || p.district.toLowerCase().includes(filters.district.toLowerCase())
-        const genderMatch = !filters.gender || p.gender === filters.gender
-        return nameMatch && districtMatch && genderMatch
+  const handleSearch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await searchMissingPersons(query, {
+        district: filters.district,
+        gender: filters.gender,
       })
-      .sort((a, b) => b.confidence - a.confidence)
-    setResults(filtered)
-    setSearched(true)
-  }
+      setResults(data)
+      setSearched(true)
+    } catch (err) {
+      console.error('Search error:', err)
+      setError('Search failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }, [query, filters])
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-5 max-w-3xl mx-auto" style={{ fontFamily: 'var(--font-body)' }}>
@@ -181,8 +197,10 @@ export default function SearchPage() {
           </div>
           <button
             onClick={handleSearch}
-            className="bg-[#1E3A8A] hover:bg-[#162D6B] text-white rounded-xl px-5 py-3 text-sm font-semibold transition-colors shadow-sm"
+            disabled={loading}
+            className="bg-[#1E3A8A] hover:bg-[#162D6B] text-white rounded-xl px-5 py-3 text-sm font-semibold transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
           >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             Search
           </button>
           <button
@@ -239,8 +257,13 @@ export default function SearchPage() {
           )}
         </AnimatePresence>
 
+        {/* Error */}
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">{error}</p>
+        )}
+
         {/* Results */}
-        {searched && (
+        {searched && !loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <p className="text-sm text-[#475569] font-medium">
               {results.length > 0 ? `${results.length} result${results.length > 1 ? 's' : ''} found` : 'No matches found. Try adjusting your search.'}
@@ -251,7 +274,7 @@ export default function SearchPage() {
           </motion.div>
         )}
 
-        {!searched && (
+        {!searched && !loading && (
           <p className="text-center text-sm text-slate-400 mt-16">Enter a name or location above to begin searching.</p>
         )}
       </motion.div>

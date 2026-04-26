@@ -1,14 +1,37 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Users, UserCheck, Tent, Headphones } from 'lucide-react'
-
-const stats = [
-  { id: 'missing', label: 'Missing', value: '1,247', icon: Users, color: 'text-[#FB7185]', bg: 'bg-[#FB7185]/8' },
-  { id: 'found', label: 'Found', value: '389', icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { id: 'camps', label: 'Camps Open', value: '42', icon: Tent, color: 'text-[#2DD4BF]', bg: 'bg-[#2DD4BF]/8' },
-  { id: 'teams', label: 'Teams Active', value: '18', icon: Headphones, color: 'text-[#1E3A8A]', bg: 'bg-[#1E3A8A]/8' },
-]
+import { subscribeGlobalStats, subscribeCampsCount, subscribeTeamsCount } from '../firebase/stats'
 
 export default function QuickStats() {
+  const [counts, setCounts] = useState({
+    missing: '—', found: '—', camps: '—', teams: '—',
+  })
+
+  useEffect(() => {
+    const unsubStats = subscribeGlobalStats((data) => {
+      setCounts((prev) => ({
+        ...prev,
+        missing: data.missing?.toLocaleString() ?? '—',
+        found: data.found?.toLocaleString() ?? '—',
+      }))
+    })
+    const unsubCamps = subscribeCampsCount((n) =>
+      setCounts((prev) => ({ ...prev, camps: n.toLocaleString() }))
+    )
+    const unsubTeams = subscribeTeamsCount((n) =>
+      setCounts((prev) => ({ ...prev, teams: n.toLocaleString() }))
+    )
+    return () => { unsubStats(); unsubCamps(); unsubTeams() }
+  }, [])
+
+  const stats = [
+    { id: 'missing', label: 'Missing', value: counts.missing, icon: Users, color: 'text-[#FB7185]', bg: 'bg-[#FB7185]/8' },
+    { id: 'found', label: 'Found', value: counts.found, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { id: 'camps', label: 'Camps Open', value: counts.camps, icon: Tent, color: 'text-[#2DD4BF]', bg: 'bg-[#2DD4BF]/8' },
+    { id: 'teams', label: 'Teams Active', value: counts.teams, icon: Headphones, color: 'text-[#1E3A8A]', bg: 'bg-[#1E3A8A]/8' },
+  ]
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 16 }}
