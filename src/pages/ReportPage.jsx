@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
 import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
@@ -327,7 +327,7 @@ function Step4({ data, onChange }) {
   )
 }
 
-function Confirmation({ refId, personName }) {
+function Confirmation({ refId, personName, reportId }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -348,17 +348,33 @@ function Confirmation({ refId, personName }) {
         <p className="text-xl font-bold text-[#1E3A8A]">{refId}</p>
       </div>
       <p className="text-xs text-slate-400">Save this ID to track your report status</p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <Link
+          to={`/track/${refId}`}
+          className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-sm font-semibold hover:bg-[#162D6B] transition-colors"
+        >
+          Track Progress
+        </Link>
+        {reportId && (
+          <Link
+            to={`/results/${reportId}`}
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-slate-200 text-[#1E3A8A] text-sm font-semibold hover:bg-[#1E3A8A]/5 transition-colors"
+          >
+            View Match Analysis
+          </Link>
+        )}
+      </div>
     </motion.div>
   )
 }
 
 export default function ReportPage() {
-  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [refId, setRefId] = useState('')
+  const [reportId, setReportId] = useState('')
 
   const [form, setForm] = useState({
     name: '', age: '', gender: '', relationship: '',
@@ -401,9 +417,8 @@ export default function ReportPage() {
 
       const result = await submitMissingPersonReport(submitData)
       setRefId(result.refId)
+      setReportId(result.id)
       setSubmitted(true)
-      // Navigate to the live ML match results page
-      navigate(`/results/${result.id}`)
     } catch (err) {
       console.error('Submit error:', err)
       setError(err?.message || 'Failed to submit report. Please try again.')
@@ -427,7 +442,7 @@ export default function ReportPage() {
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
           {submitted ? (
-            <Confirmation refId={refId} personName={form.name} />
+            <Confirmation refId={refId} personName={form.name} reportId={reportId} />
           ) : (
             <>
               <h2 className="text-lg font-bold text-[#0F172A] mb-6 flex items-center gap-2">

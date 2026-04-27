@@ -1,48 +1,42 @@
-import { motion } from 'framer-motion'
-import { UserSearch, UserCheck, ShieldCheck } from 'lucide-react'
+import { motion } from "framer-motion";
+import { UserSearch, UserCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const actions = [
   {
-    id: 'report-missing',
-    title: 'Report Missing Person',
-    description: 'Submit details to help us locate someone.',
+    id: "report-missing",
+    title: "Report Missing Person",
+    description: "Submit details to help us locate someone.",
     icon: UserSearch,
-    color: 'text-[#1E3A8A]',
-    bg: 'bg-[#1E3A8A]/10',
-    href: '#report-missing'
+    color: "text-[#1E3A8A]",
+    bg: "bg-[#1E3A8A]/10",
+    to: "/report",
   },
   {
-    id: 'report-found',
-    title: 'Report Found Person',
-    description: 'Register someone you have located safely.',
+    id: "report-found",
+    title: "Report Found Person",
+    description: "Register someone you have located safely.",
     icon: UserCheck,
-    color: 'text-[#2DD4BF]',
-    bg: 'bg-[#2DD4BF]/10',
-    href: '#report-found'
+    color: "text-[#2DD4BF]",
+    bg: "bg-[#2DD4BF]/10",
+    to: "/report-found",
   },
-  {
-    id: 'self-report',
-    title: "Self Report (I'm Safe)",
-    description: 'Let your loved ones know you are secure.',
-    icon: ShieldCheck,
-    color: 'text-[#FB7185]',
-    bg: 'bg-[#FB7185]/10',
-    href: '#self-report'
-  }
-]
+];
 
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-}
+    transition: { staggerChildren: 0.1 },
+  },
+};
 
 const item = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
-}
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+};
+
+const MotionLink = motion(Link);
 
 export default function QuickActions() {
   return (
@@ -55,27 +49,35 @@ export default function QuickActions() {
         className="grid grid-cols-1 md:grid-cols-3 gap-6"
       >
         {actions.map((action) => (
-          <motion.a
+          <MotionLink
             key={action.id}
-            href={action.href}
+            to={action.to}
             variants={item}
-            whileHover={{ scale: 1.03, boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
+            whileHover={{
+              scale: 1.03,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+            }}
             whileTap={{ scale: 0.98 }}
             className="flex flex-col items-center text-center p-8 bg-white rounded-xl shadow-sm border border-gray-100 transition-colors hover:border-[#2DD4BF]/30 cursor-pointer"
-            style={{ fontFamily: 'var(--font-body)' }}
+            style={{ fontFamily: "var(--font-body)" }}
           >
-            <div className={`p-4 rounded-full ${action.bg} ${action.color} mb-5`}>
+            <div
+              className={`p-4 rounded-full ${action.bg} ${action.color} mb-5`}
+            >
               <action.icon className="w-8 h-8" strokeWidth={2} />
             </div>
-            <h3 className="text-xl font-bold text-[#0F172A] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>
+            <h3
+              className="text-xl font-bold text-[#0F172A] mb-2"
+              style={{ fontFamily: "var(--font-heading)" }}
+            >
               {action.title}
             </h3>
             <p className="text-[#475569] text-sm leading-relaxed">
               {action.description}
             </p>
-          </motion.a>
+          </MotionLink>
         ))}
       </motion.div>
     </section>
-  )
+  );
 }
