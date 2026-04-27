@@ -201,7 +201,7 @@ export default function RescueDashboard() {
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Safe
+                {t("rescue_page.tab_safe")}
               </button>
               <button
                 onClick={() => setLeftTab("exchange")}
@@ -212,7 +212,7 @@ export default function RescueDashboard() {
                 }`}
               >
                 <Share2 className="w-3.5 h-3.5" />
-                Exchange
+                {t("rescue_page.tab_exchange")}
               </button>
               <button
                 onClick={() => setLeftTab("comms")}
@@ -223,7 +223,7 @@ export default function RescueDashboard() {
                 }`}
               >
                 <MessageSquareWarning className="w-3.5 h-3.5" />
-                Comms
+                {t("rescue_page.tab_comms")}
               </button>
               <button
                 onClick={() => setLeftTab("ai")}

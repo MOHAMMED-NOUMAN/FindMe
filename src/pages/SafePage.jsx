@@ -7,16 +7,18 @@ import {
   Phone,
   ShieldCheck,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { submitSafeReport } from "../firebase/safeReports";
 
 const statusOptions = [
-  { value: "safe", label: "I am safe" },
-  { value: "safe_needs_help", label: "Safe but need help" },
-  { value: "at_relief_camp", label: "At relief camp" },
-  { value: "medical_help", label: "Need medical help" },
+  { value: "safe", translationKey: "safe" },
+  { value: "safe_needs_help", translationKey: "safe_needs_help" },
+  { value: "at_relief_camp", translationKey: "at_relief_camp" },
+  { value: "medical_help", translationKey: "medical_help" },
 ];
 
 export default function SafePage() {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -43,7 +45,7 @@ export default function SafePage() {
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) {
-      setError("Location is not available on this device.");
+      setError(t("safe_page.errors.no_location"));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function SafePage() {
         setLocating(false);
       },
       () => {
-        setError("Could not get your current location.");
+        setError(t("safe_page.errors.location_failed"));
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 10000 },
@@ -84,7 +86,7 @@ export default function SafePage() {
       setSubmitted(result);
     } catch (err) {
       console.error("Safe status submit error:", err);
-      setError(err?.message || "Could not share your safe status.");
+      setError(err?.message || t("safe_page.errors.submit_failed"));
     } finally {
       setSubmitting(false);
     }
@@ -101,14 +103,13 @@ export default function SafePage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
             <CheckCircle2 className="h-8 w-8 text-emerald-600" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">Safe Status Shared</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t("safe_page.success.title")}</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Your update is now visible to rescue operators. Share this reference
-            with family if they are searching for you.
+            {t("safe_page.success.message")}
           </p>
           <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
             <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
-              Reference ID
+              {t("safe_page.success.ref_id")}
             </p>
             <p className="mt-1 text-xl font-bold text-emerald-900">
               {submitted.refId}
@@ -129,14 +130,13 @@ export default function SafePage() {
         <div className="mb-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-emerald-700">
             <ShieldCheck className="h-4 w-4" />
-            Safety check-in
+            {t("safe_page.badge")}
           </div>
           <h1 className="mt-3 text-3xl font-bold text-slate-900">
-            I Am Safe
+            {t("safe_page.title")}
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            Tell rescue teams and searchers that you are safe, where you are,
-            and whether you still need help.
+            {t("safe_page.subtitle")}
           </p>
         </div>
 
@@ -153,19 +153,19 @@ export default function SafePage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-900">
-                Full Name
+                {t("safe_page.form.full_name")}
               </label>
               <input
                 value={form.name}
                 onChange={(event) => setField("name", event.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                placeholder="Your name"
+                placeholder={t("safe_page.form.full_name_placeholder")}
                 required
               />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-900">
-                Phone Number
+                {t("safe_page.form.phone")}
               </label>
               <div className="relative">
                 <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -173,7 +173,7 @@ export default function SafePage() {
                   value={form.phone}
                   onChange={(event) => setField("phone", event.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                  placeholder="+91..."
+                  placeholder={t("safe_page.form.phone_placeholder")}
                   required
                 />
               </div>
@@ -182,7 +182,7 @@ export default function SafePage() {
 
           <div className="mt-4">
             <label className="mb-2 block text-sm font-bold text-slate-900">
-              Safety Status
+              {t("safe_page.form.safety_status")}
             </label>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {statusOptions.map((option) => (
@@ -196,7 +196,7 @@ export default function SafePage() {
                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
                 >
-                  {option.label}
+                  {t(`safe_page.status.${option.translationKey}`)}
                 </button>
               ))}
             </div>
@@ -205,24 +205,24 @@ export default function SafePage() {
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-900">
-                District / City
+                {t("safe_page.form.district")}
               </label>
               <input
                 value={form.district}
                 onChange={(event) => setField("district", event.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                placeholder="e.g. Hyderabad"
+                placeholder={t("safe_page.form.district_placeholder")}
               />
             </div>
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-900">
-                Current Location
+                {t("safe_page.form.location")}
               </label>
               <input
                 value={form.location}
                 onChange={(event) => setField("location", event.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                placeholder="Camp, landmark, street"
+                placeholder={t("safe_page.form.location_placeholder")}
               />
             </div>
           </div>
@@ -230,13 +230,13 @@ export default function SafePage() {
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-bold text-slate-900">
-                Relative Phone (optional)
+                {t("safe_page.form.relative_phone")}
               </label>
               <input
                 value={form.relativePhone}
                 onChange={(event) => setField("relativePhone", event.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                placeholder="+91..."
+                placeholder={t("safe_page.form.relative_phone_placeholder")}
               />
             </div>
           </div>
@@ -253,33 +253,33 @@ export default function SafePage() {
               <MapPin className="h-4 w-4" />
             )}
             {form.latitude != null && form.longitude != null
-              ? "Location attached"
-              : "Attach Current Location"}
+              ? t("safe_page.form.location_attached")
+              : t("safe_page.form.attach_location")}
           </button>
 
           <div className="mt-4">
             <label className="mb-2 block text-sm font-bold text-slate-900">
-              Message To Relative (optional)
+              {t("safe_page.form.relative_message")}
             </label>
             <textarea
               value={form.relativeMessage}
               onChange={(event) => setField("relativeMessage", event.target.value)}
               rows={3}
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-              placeholder="I am safe. Don’t worry. I will call you soon. Bye."
+              placeholder={t("safe_page.form.relative_message_placeholder")}
             />
           </div>
 
           <div className="mt-4">
             <label className="mb-2 block text-sm font-bold text-slate-900">
-              Rescue Message
+              {t("safe_page.form.rescue_message")}
             </label>
             <textarea
               value={form.message}
               onChange={(event) => setField("message", event.target.value)}
               rows={4}
               className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
-              placeholder="I am with family, at a relief camp, need transport, etc."
+              placeholder={t("safe_page.form.rescue_message_placeholder")}
             />
           </div>
 
@@ -294,7 +294,7 @@ export default function SafePage() {
               ) : (
                 <ShieldCheck className="h-4 w-4" />
               )}
-              Share Safe Status
+              {t("safe_page.form.share_btn")}
             </button>
           </div>
         </form>

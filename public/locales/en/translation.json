@@ -30,15 +30,60 @@
     "sign_out": "Sign out",
     "operator_label": "Operator",
     "tab_board": "Search Board",
+    "tab_safe": "Safe",
+    "tab_exchange": "Exchange",
+    "tab_comms": "Comms",
     "tab_ai": "AI Matches",
     "tab_map": "Command Map",
     "board_title": "Emergency Search Board",
     "live": "Live"
   },
+  "safe_page": {
+    "title": "I Am Safe",
+    "badge": "Safety check-in",
+    "subtitle": "Tell rescue teams and searchers that you are safe, where you are, and whether you still need help.",
+    "form": {
+      "full_name": "Full Name",
+      "full_name_placeholder": "Your name",
+      "phone": "Phone Number",
+      "phone_placeholder": "+91...",
+      "safety_status": "Safety Status",
+      "district": "District / City",
+      "district_placeholder": "e.g. Hyderabad",
+      "location": "Current Location",
+      "location_placeholder": "Camp, landmark, street",
+      "relative_phone": "Relative Phone (optional)",
+      "relative_phone_placeholder": "+91...",
+      "attach_location": "Attach Current Location",
+      "location_attached": "Location attached",
+      "relative_message": "Message To Relative (optional)",
+      "relative_message_placeholder": "I am safe. Don’t worry. I will call you soon. Bye.",
+      "rescue_message": "Rescue Message",
+      "rescue_message_placeholder": "I am with family, at a relief camp, need transport, etc.",
+      "share_btn": "Share Safe Status"
+    },
+    "status": {
+      "safe": "I am safe",
+      "safe_needs_help": "Safe but need help",
+      "at_relief_camp": "At relief camp",
+      "medical_help": "Need medical help"
+    },
+    "success": {
+      "title": "Safe Status Shared",
+      "message": "Your update is now visible to rescue operators. Share this reference with family if they are searching for you.",
+      "ref_id": "Reference ID"
+    },
+    "errors": {
+      "no_location": "Location is not available on this device.",
+      "location_failed": "Could not get your current location.",
+      "submit_failed": "Could not share your safe status."
+    }
+  },
   "navbar": {
     "home": "Home",
     "search": "Search",
     "report": "Report",
+    "safe": "I Am Safe",
     "track": "Track",
     "reportFound": "Report Found Person",
     "rescue": "Rescue",
