@@ -21,6 +21,11 @@ service cloud.firestore {
       );
     }
 
+    function isNonAnonymousUser() {
+      return isSignedIn() &&
+        request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
     function isCoordinator() {
       return isSignedIn() &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
@@ -59,6 +64,19 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /safe_reports/{docId} {
+      allow read: if isRescueTeam();
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasAll(['name', 'phone', 'status', 'reviewStatus'])
+        && request.resource.data.reviewStatus == 'new';
+      allow update: if isRescueTeam()
+        || (isSignedIn()
+            && request.auth.uid == resource.data.reporterUid
+            && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['phone', 'location', 'message', 'coordinates', 'updatedAt']));
+      allow delete: if isCoordinator();
+    }
+
     // ── tasks ────────────────────────────────────────────────────────────
     // Rescue & coordinator can read+write.
     // Any signed-in user (incl. anonymous) can CREATE tasks — the client-side
@@ -68,6 +86,28 @@ service cloud.firestore {
       allow read: if isRescueTeam();
       allow create: if isSignedIn();   // matching engine runs as anonymous auth
       allow update: if isRescueTeam();
+      allow delete: if isCoordinator();
+    }
+
+    // Shared live updates posted by rescue operators for inter-team coordination.
+    match /rescue_exchange/{docId} {
+      allow read: if isNonAnonymousUser();
+      allow create: if isNonAnonymousUser();
+      allow update: if isNonAnonymousUser();
+      allow delete: if isCoordinator();
+    }
+
+    match /rescue_activity/{docId} {
+      allow read: if isRescueTeam();
+      allow create: if isRescueTeam();
+      allow update: if isCoordinator();
+      allow delete: if isCoordinator();
+    }
+
+    match /rescue_comms/{docId} {
+      allow read: if isNonAnonymousUser();
+      allow create: if isNonAnonymousUser();
+      allow update: if isNonAnonymousUser();
       allow delete: if isCoordinator();
     }
 

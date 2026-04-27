@@ -3,30 +3,30 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "react-router-dom";
 import { Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import {
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "../firebase/config";
 
 const navLinks = [
   { key: "home", to: "/" },
   { key: "search", to: "/search" },
   { key: "report", to: "/report" },
+  { key: "safe", to: "/safe" },
   { key: "track", to: "/track" },
   { key: "reportFound", to: "/report-found" },
-];
-
-const messages = [
-  "🚨 AMBER ALERT: Rahul Sharma (8) last seen in Jaipur, Rajasthan",
-  "🚨 MISSING: Priya Patel (24) last seen in Mumbai (Andheri West)",
-  "🚨 RECENT: Amit Singh (45) last seen in Delhi (Connaught Place)",
-  "🚨 URGENT: Ananya Das (12) last seen in Kolkata (Salt Lake)",
-  "📞 Unified Emergency Helpline: 112",
-  "👶 Missing Children (Childline): 1098",
-  "👮 Police: 100",
-  "🛡️ Women Helpline: 1091",
 ];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [missingReports, setMissingReports] = useState([]);
+  const [safeReportsCount, setSafeReportsCount] = useState(0);
   const location = useLocation();
   const { t, i18n } = useTranslation();
 
@@ -51,6 +51,65 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const missingQ = query(
+      collection(db, "missing_persons"),
+      where("status", "==", "missing"),
+      orderBy("createdAt", "desc"),
+    );
+    const safeQ = query(collection(db, "safe_reports"));
+
+    const unsubMissing = onSnapshot(
+      missingQ,
+      (snap) => {
+        setMissingReports(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      () => setMissingReports([]),
+    );
+
+    const unsubSafe = onSnapshot(
+      safeQ,
+      (snap) => setSafeReportsCount(snap.size),
+      () => setSafeReportsCount(0),
+    );
+
+    return () => {
+      unsubMissing();
+      unsubSafe();
+    };
+  }, []);
+
+  const missingChildrenCount = missingReports.filter((person) => {
+    const age = Number(person.age);
+    return Number.isFinite(age) && age < 18;
+  }).length;
+
+  const alertMessages = missingReports.length
+    ? missingReports.map((person) => {
+        const place =
+          person.lastKnownLocation?.description ||
+          person.lastKnownLocation?.district ||
+          "location unknown";
+        const ageLabel =
+          person.age !== null && person.age !== undefined && String(person.age).trim()
+            ? ` (${person.age})`
+            : "";
+        return `URGENT: ${person.name || "Unknown"}${ageLabel} last seen in ${place}`;
+      })
+    : ["No active missing person alerts right now"];
+
+  const statMessages = [
+    `Active Missing Reports: ${missingReports.length}`,
+    `Missing Children: ${missingChildrenCount}`,
+    `Safe Check-ins Received: ${safeReportsCount}`,
+    "Unified Emergency Helpline: 112",
+    "Police: 100",
+    "Women Helpline: 1091",
+    "Childline: 1098",
+  ];
+
+  const messages = [...alertMessages, ...statMessages];
 
   return (
     <motion.header
@@ -137,7 +196,7 @@ export default function Navbar() {
                             : "text-[#475569] hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
                         }`}
                     >
-                      {key === "track" ? "Track" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
+                      {key === "track" ? "Track" : key === "safe" ? "I Am Safe" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
                     </Link>
                   </li>
                 );
@@ -245,7 +304,7 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="block px-4 py-3 text-base font-medium text-[#475569] rounded-xl transition-colors hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
                     >
-                      {key === "track" ? "Track" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
+                      {key === "track" ? "Track" : key === "safe" ? "I Am Safe" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
                     </Link>
                   </li>
                 ))}
