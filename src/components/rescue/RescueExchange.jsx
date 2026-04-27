@@ -192,7 +192,7 @@ export default function RescueExchange({ user }) {
         </div>
         <button
           onClick={() => setFormOpen((value) => !value)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-slate-800"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-slate-800"
         >
           <Plus className="w-3.5 h-3.5" />
           Share Update
@@ -234,7 +234,7 @@ export default function RescueExchange({ user }) {
           onSubmit={handleSubmit}
           className="rounded-xl border border-slate-200 bg-white p-3 space-y-3"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
                 Link Case
@@ -268,7 +268,7 @@ export default function RescueExchange({ user }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-500 mb-1">
                 Status
@@ -327,7 +327,7 @@ export default function RescueExchange({ user }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input
               value={form.district}
               onChange={(event) => setField("district", event.target.value)}
@@ -368,7 +368,7 @@ export default function RescueExchange({ user }) {
             <button
               type="submit"
               disabled={submitting}
-              className="lg:w-36 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="w-full lg:w-36 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
             >
               {submitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -512,7 +512,7 @@ export default function RescueExchange({ user }) {
               </span>
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
+            <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
               {item.actor?.uid === user?.uid ? (
                 <span className="text-[11px] font-semibold text-slate-500">
                   Your shared request is waiting for another rescuer to add.
@@ -530,7 +530,7 @@ export default function RescueExchange({ user }) {
                   <button
                     onClick={() => handleAddToSearchBoard(item)}
                     disabled={addingId === item.id}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-blue-700 hover:bg-blue-100 disabled:opacity-60"
+                    className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-blue-700 hover:bg-blue-100 disabled:opacity-60"
                   >
                     {addingId === item.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />

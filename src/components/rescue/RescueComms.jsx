@@ -79,6 +79,8 @@ export default function RescueComms({ user }) {
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileComposerOpen, setMobileComposerOpen] = useState(false);
 
   useEffect(() => {
     return subscribeRescueComms(
@@ -190,7 +192,7 @@ export default function RescueComms({ user }) {
 
   return (
     <div
-      className="h-full min-h-0 flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white"
+      className="flex min-h-0 flex-col rounded-xl border border-slate-200 bg-white md:h-full md:overflow-hidden"
       style={{ fontFamily: "var(--font-body)" }}
     >
       <div className="shrink-0 border-b border-slate-200 bg-slate-50 px-3 py-3">
@@ -204,7 +206,7 @@ export default function RescueComms({ user }) {
               Field Information Exchange
             </h2>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
             <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
               <p className="text-[10px] font-bold uppercase text-slate-500">
                 Active
@@ -228,7 +230,7 @@ export default function RescueComms({ user }) {
           </div>
         </div>
 
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <div className="mt-3 flex flex-wrap gap-2">
           <button
             onClick={() =>
               setFilters((current) => ({ ...current, category: "all" }))
@@ -247,7 +249,7 @@ export default function RescueComms({ user }) {
               onClick={() =>
                 setFilters((current) => ({ ...current, category }))
               }
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide ${
                 filters.category === category
                   ? "border-slate-900 bg-slate-900 text-white"
                   : categoryStyles[category]
@@ -258,7 +260,24 @@ export default function RescueComms({ user }) {
           ))}
         </div>
 
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr_130px_120px] gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2 md:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen((v) => !v)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700"
+          >
+            {mobileFiltersOpen ? "Hide Filters" : "Show Filters"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileComposerOpen((v) => !v)}
+            className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-red-700"
+          >
+            {mobileComposerOpen ? "Hide Composer" : "New Message"}
+          </button>
+        </div>
+
+        <div className={`${mobileFiltersOpen ? "grid" : "hidden"} mt-3 grid-cols-1 gap-2 md:grid md:grid-cols-1 lg:grid-cols-[1fr_130px_120px]`}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -311,7 +330,7 @@ export default function RescueComms({ user }) {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto bg-slate-50 px-3 py-4">
+      <div className="bg-slate-50 px-3 py-4 pb-6 md:flex-1 md:min-h-0 md:overflow-y-auto">
         {loading && (
           <div className="flex items-center justify-center py-12 text-slate-500">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -341,7 +360,7 @@ export default function RescueComms({ user }) {
                 className={`flex ${mine ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[86%] rounded-2xl border px-3 py-2 shadow-sm ${
+                  className={`max-w-full sm:max-w-[86%] rounded-2xl border px-3 py-2 shadow-sm ${
                     mine
                       ? "rounded-br-md border-blue-200 bg-blue-50"
                       : item.priority === "CRITICAL"
@@ -393,7 +412,7 @@ export default function RescueComms({ user }) {
                     </div>
                   )}
 
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-black/5 pt-2">
+                  <div className="mt-2 flex flex-col gap-2 border-t border-black/5 pt-2 sm:flex-row sm:items-center sm:justify-between">
                     <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500">
                       <Clock className="w-3 h-3" />
                       {formatTime(item.createdAt)}
@@ -437,71 +456,70 @@ export default function RescueComms({ user }) {
         </div>
       </div>
 
-      <form
-        onSubmit={handleSubmit}
-        className="shrink-0 border-t border-slate-200 bg-white p-3"
-      >
-        <div className="mb-2 grid grid-cols-2 gap-2 lg:grid-cols-[140px_120px_1fr_1fr_1fr]">
-          <select
-            value={form.category}
-            onChange={(event) => setField("category", event.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-semibold"
-          >
-            {COMMS_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {categoryLabels[category]}
-              </option>
-            ))}
-          </select>
-          <select
-            value={form.priority}
-            onChange={(event) => setField("priority", event.target.value)}
-            className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-semibold"
-          >
-            {COMMS_PRIORITY.map((priority) => (
-              <option key={priority}>{priority}</option>
-            ))}
-          </select>
-          <input
-            value={form.district}
-            onChange={(event) => setField("district", event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
-            placeholder="District"
-          />
-          <input
-            value={form.zone}
-            onChange={(event) => setField("zone", event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
-            placeholder="Zone / camp"
-          />
-          <input
-            value={form.location}
-            onChange={(event) => setField("location", event.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
-            placeholder="Landmark / route"
-          />
-        </div>
-        <div className="flex items-end gap-2">
-          <textarea
-            required
-            value={form.message}
-            onChange={(event) => setField("message", event.target.value)}
-            rows={2}
-            className="min-h-[48px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
-            placeholder="Send field intel: road closed, camp full, water rising, medical help needed..."
-          />
-          <button
-            type="submit"
-            disabled={submitting || !form.message.trim()}
-            className="h-12 w-12 shrink-0 inline-flex items-center justify-center rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
-            title="Send message"
-          >
-            {submitting ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
+      <form onSubmit={handleSubmit} className="shrink-0 border-t border-slate-200 bg-white p-3">
+        <div className={`${mobileComposerOpen ? "block" : "hidden"} md:block`}>
+          <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[140px_120px_1fr_1fr_1fr]">
+            <select
+              value={form.category}
+              onChange={(event) => setField("category", event.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-semibold"
+            >
+              {COMMS_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {categoryLabels[category]}
+                </option>
+              ))}
+            </select>
+            <select
+              value={form.priority}
+              onChange={(event) => setField("priority", event.target.value)}
+              className="rounded-lg border border-slate-300 px-2 py-2 text-xs font-semibold"
+            >
+              {COMMS_PRIORITY.map((priority) => (
+                <option key={priority}>{priority}</option>
+              ))}
+            </select>
+            <input
+              value={form.district}
+              onChange={(event) => setField("district", event.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
+              placeholder="District"
+            />
+            <input
+              value={form.zone}
+              onChange={(event) => setField("zone", event.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
+              placeholder="Zone / camp"
+            />
+            <input
+              value={form.location}
+              onChange={(event) => setField("location", event.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-xs"
+              placeholder="Landmark / route"
+            />
+          </div>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end">
+            <textarea
+              required
+              value={form.message}
+              onChange={(event) => setField("message", event.target.value)}
+              rows={2}
+              className="min-h-[48px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
+              placeholder="Send field intel: road closed, camp full, water rising, medical help needed..."
+            />
+            <button
+              type="submit"
+              disabled={submitting || !form.message.trim()}
+              className="h-12 w-full sm:w-12 shrink-0 inline-flex items-center justify-center rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              title="Send message"
+            >
+              {submitting ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
       </form>
     </div>
