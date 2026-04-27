@@ -1,0 +1,46 @@
+{
+  "navbar": {
+    "home": "Home",
+    "search": "Search",
+    "report": "Report",
+    "track": "Track",
+    "rescue": "Rescue"
+  },
+  "hero": {
+    "title": "Find Missing Persons Faster",
+    "subtitle": "AI-powered face matching and location tracking to reunite families during crises.",
+    "report_btn": "Report Missing Person",
+    "search_btn": "Search Database"
+  },
+  "report_page": {
+    "title": "Report Missing Person",
+    "subtitle": "Please provide as much detail as you can. This helps us search faster.",
+    "step_person": "Person Details",
+    "step_location": "Last Seen",
+    "step_photos": "Photos & Description",
+    "step_contact": "Your Contact",
+    "submit": "Submit Report",
+    "next": "Next",
+    "back": "Back",
+    "full_name": "Full Name",
+    "age": "Age (approximate)",
+    "gender": "Gender",
+    "relationship": "Your Relationship",
+    "last_seen": "Last Seen Location",
+    "district": "District / City",
+    "state": "State",
+    "date_seen": "Date Last Seen",
+    "time_seen": "Approx. Time",
+    "upload": "Upload Photo",
+    "physical_desc": "Physical Description",
+    "phone": "Your Phone Number",
+    "alt_phone": "Alternate Contact (optional)",
+    "consent": "I confirm the information provided is accurate and consent to sharing it with rescue authorities for the purpose of locating this person."
+  },
+  "search_page": {
+    "title": "Search Missing Persons Database",
+    "placeholder": "Search by name, district, or characteristics...",
+    "filter": "Filter",
+    "no_results": "No exact matches found."
+  }
+}
