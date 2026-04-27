@@ -43,7 +43,7 @@ export default function TaskBoard({ user }) {
   // Group into two columns: Missing (No Match) and High Confidence (Has Match)
   const columns = [
     { id: "missing", label: "Missing", color: "bg-red-500" },
-    { id: "match", label: "Potential Match", color: "bg-amber-500" },
+    { id: "match", label: "Confirmed Match", color: "bg-amber-500" },
   ];
 
   const grouped = {

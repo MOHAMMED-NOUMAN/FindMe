@@ -86,7 +86,7 @@ export default function TaskCard({
           className={`inline-flex items-center gap-1 rounded-full px-2 py-1 ${cfg.bg} ${cfg.text} border ${cfg.border} font-semibold`}
         >
           <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-          {task.status === "match" ? "Potential match" : "Missing"}
+          {task.status === "match" ? "Confirmed match" : "Missing"}
         </span>
         <span
           className={`flex items-center gap-1 font-medium ${isOverdue ? "text-red-600 font-semibold" : ""}`}
