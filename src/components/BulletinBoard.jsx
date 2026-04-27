@@ -194,10 +194,10 @@ export default function BulletinBoard() {
 
             <div className="mt-3">
               <Link
-                to={`/search?q=${encodeURIComponent(person.name || "")}`}
+                to="/report-found"
                 className="inline-flex items-center justify-center text-xs font-semibold text-white bg-[#1E3A8A] hover:bg-[#162D6B] rounded-lg px-3 py-1.5 transition-colors"
               >
-                Open In Search
+                Report Found Person
               </Link>
             </div>
           </motion.div>
