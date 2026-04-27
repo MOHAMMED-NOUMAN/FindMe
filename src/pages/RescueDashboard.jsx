@@ -4,6 +4,9 @@ import { useTranslation } from "react-i18next";
 import { LogOut, ShieldCheck, Loader2, Radio, Sparkles, LayoutList } from "lucide-react";
 import CommandMap from "../components/rescue/CommandMap";
 import TaskBoard from "../components/rescue/TaskBoard";
+import RescueExchange from "../components/rescue/RescueExchange";
+import RescueComms from "../components/rescue/RescueComms";
+import SafeReports from "../components/rescue/SafeReports";
 import AIMatchResults from "../components/AIMatchResults";
 import {
   signInWithGoogle,
@@ -64,7 +67,7 @@ export default function RescueDashboard() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [mobileView, setMobileView] = useState("board");
-  const [leftTab, setLeftTab] = useState("board"); // "board" | "ai"
+  const [leftTab, setLeftTab] = useState("board"); // "board" | "safe" | "exchange" | "comms" | "ai"
 
   useEffect(() => {
     const unsub = onAuthChange((u) => setUser(u));
@@ -177,7 +180,7 @@ export default function RescueDashboard() {
             </div>
 
             {/* Left-panel tab switcher */}
-            <div className="grid grid-cols-2 gap-1.5 bg-slate-100 rounded-xl p-1">
+            <div className="grid grid-cols-5 gap-1.5 bg-slate-100 rounded-xl p-1">
               <button
                 onClick={() => setLeftTab("board")}
                 className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
@@ -188,6 +191,72 @@ export default function RescueDashboard() {
               >
                 <LayoutList className="w-3.5 h-3.5" />
                 {t("rescue_page.tab_board")}
+              </button>
+              <button
+                onClick={() => setLeftTab("safe")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "safe"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Safe
+              </button>
+              <button
+                onClick={() => setLeftTab("exchange")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "exchange"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Exchange
+              </button>
+              <button
+                onClick={() => setLeftTab("comms")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "comms"
+                    ? "bg-white text-red-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <MessageSquareWarning className="w-3.5 h-3.5" />
+                Comms
+              </button>
+              <button
+                onClick={() => setLeftTab("safe")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "safe"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Safe
+              </button>
+              <button
+                onClick={() => setLeftTab("exchange")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "exchange"
+                    ? "bg-white text-emerald-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Exchange
+              </button>
+              <button
+                onClick={() => setLeftTab("comms")}
+                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
+                  leftTab === "comms"
+                    ? "bg-white text-red-700 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <MessageSquareWarning className="w-3.5 h-3.5" />
+                Comms
               </button>
               <button
                 onClick={() => setLeftTab("ai")}
@@ -217,6 +286,12 @@ export default function RescueDashboard() {
                 </div>
                 <TaskBoard user={user} />
               </>
+            ) : leftTab === "exchange" ? (
+              <RescueExchange user={user} />
+            ) : leftTab === "safe" ? (
+              <SafeReports user={user} />
+            ) : leftTab === "comms" ? (
+              <RescueComms user={user} />
             ) : (
               <AIMatchResults />
             )}
