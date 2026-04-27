@@ -1,21 +1,23 @@
 import { useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, SlidersHorizontal, User, MapPin, ChevronDown, ChevronUp, Phone, Map, Bell, Loader2 } from 'lucide-react'
 import { searchMissingPersons } from '../firebase/missingPersons'
 import { subscribeToPersonAlerts } from '../firebase/notifications'
 
-const getConfig = (score) => {
-  if (score > 85) return { label: 'High Match', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500', action: 'Contact Rescue Team', actionStyle: 'bg-emerald-600 hover:bg-emerald-700 text-white' }
-  if (score >= 60) return { label: 'Possible Match', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200', dot: 'bg-amber-400', action: 'Request More Info', actionStyle: 'bg-amber-100 hover:bg-amber-200 text-amber-800' }
-  return { label: 'Low Match', color: 'text-slate-500', bg: 'bg-slate-50', border: 'border-slate-200', dot: 'bg-slate-400', action: 'Track Case', actionStyle: 'bg-slate-100 hover:bg-slate-200 text-slate-700' }
+function getConfig(score, t) {
+  if (score > 85) return { label: t('search_page.high_match'),    color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', dot: 'bg-emerald-500', action: t('search_page.contact_rescue'), actionStyle: 'bg-emerald-600 hover:bg-emerald-700 text-white' }
+  if (score >= 60) return { label: t('search_page.possible_match'), color: 'text-amber-700',  bg: 'bg-amber-50',   border: 'border-amber-200',   dot: 'bg-amber-400',   action: t('search_page.request_info'),   actionStyle: 'bg-amber-100 hover:bg-amber-200 text-amber-800' }
+  return              { label: t('search_page.low_match'),        color: 'text-slate-500',  bg: 'bg-slate-50',   border: 'border-slate-200',   dot: 'bg-slate-400',   action: t('search_page.track_case'),    actionStyle: 'bg-slate-100 hover:bg-slate-200 text-slate-700' }
 }
 
 function MatchCard({ person, index }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [notified, setNotified] = useState(false)
   const [notifyLoading, setNotifyLoading] = useState(false)
   const [showMap, setShowMap] = useState(false)
-  const cfg = getConfig(person.confidence ?? 0)
+  const cfg = getConfig(person.confidence ?? 0, t)
 
   const handleNotify = async () => {
     if (notified || notifyLoading) return
@@ -33,8 +35,7 @@ function MatchCard({ person, index }) {
     }
   }
 
-  // Resolve nested location field from Firestore shape
-  const lastSeen = person.lastKnownLocation?.description || person.lastSeen || 'Unknown'
+  const lastSeen = person.lastKnownLocation?.description || person.lastSeen || t('common.not_available')
   const district = person.lastKnownLocation?.district || person.district || '—'
 
   return (
@@ -45,12 +46,10 @@ function MatchCard({ person, index }) {
       whileHover={!expanded ? { scale: 1.01, boxShadow: '0 6px 24px rgba(0,0,0,0.05)' } : {}}
       className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden transition-all"
     >
-      {/* Card Row */}
       <button
         onClick={() => setExpanded((v) => !v)}
         className="w-full flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 text-left cursor-pointer"
       >
-        {/* Photo */}
         <div className="w-14 h-14 rounded-full bg-[#1E3A8A]/6 border border-[#1E3A8A]/10 flex items-center justify-center shrink-0 overflow-hidden">
           {person.photoUrl
             ? <img src={person.photoUrl} alt={person.name} className="w-full h-full object-cover" />
@@ -58,7 +57,6 @@ function MatchCard({ person, index }) {
           }
         </div>
 
-        {/* Details */}
         <div className="flex-1 min-w-0" style={{ fontFamily: 'var(--font-body)' }}>
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <h3 className="text-base font-bold text-[#0F172A]">{person.name}</h3>
@@ -71,7 +69,6 @@ function MatchCard({ person, index }) {
           </div>
         </div>
 
-        {/* Confidence + expand toggle */}
         <div className="flex items-center gap-3 shrink-0">
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.border}`}>
             <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
@@ -81,7 +78,6 @@ function MatchCard({ person, index }) {
         </div>
       </button>
 
-      {/* Expanded details */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -93,11 +89,10 @@ function MatchCard({ person, index }) {
             style={{ fontFamily: 'var(--font-body)' }}
           >
             <div className="p-5 space-y-4">
-              <p className="text-sm text-[#475569] leading-relaxed">{person.description || 'No description available.'}</p>
-              <p className="text-xs text-slate-400 font-medium">District: {district}</p>
+              <p className="text-sm text-[#475569] leading-relaxed">{person.description || t('search_page.no_desc')}</p>
+              <p className="text-xs text-slate-400 font-medium">{t('search_page.district_label')}: {district}</p>
               {person.refId && <p className="text-xs text-slate-400 font-mono">Ref: {person.refId}</p>}
 
-              {/* Mini map placeholder */}
               <AnimatePresence>
                 {showMap && (
                   <motion.div
@@ -114,7 +109,6 @@ function MatchCard({ person, index }) {
                 )}
               </AnimatePresence>
 
-              {/* Action buttons */}
               <div className="flex flex-wrap gap-2 pt-1">
                 <button className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${cfg.actionStyle}`}>
                   <Phone className="w-3.5 h-3.5 inline mr-1.5" />
@@ -125,7 +119,7 @@ function MatchCard({ person, index }) {
                   className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1E3A8A]/8 hover:bg-[#1E3A8A]/15 text-[#1E3A8A] transition-colors"
                 >
                   <Map className="w-3.5 h-3.5 inline mr-1.5" />
-                  {showMap ? 'Hide' : 'Show'} Probable Location
+                  {showMap ? t('search_page.hide_location') : t('search_page.show_location')}
                 </button>
                 <button
                   onClick={handleNotify}
@@ -138,7 +132,7 @@ function MatchCard({ person, index }) {
                     ? <Loader2 className="w-3.5 h-3.5 inline mr-1.5 animate-spin" />
                     : <Bell className="w-3.5 h-3.5 inline mr-1.5" />
                   }
-                  {notified ? 'Notified ✓' : 'Notify Me'}
+                  {notified ? t('search_page.notified') : t('search_page.notify_me')}
                 </button>
               </div>
             </div>
@@ -150,6 +144,7 @@ function MatchCard({ person, index }) {
 }
 
 export default function SearchPage() {
+  const { t } = useTranslation()
   const [query, setQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState({ age: '', district: '', gender: '' })
@@ -170,17 +165,19 @@ export default function SearchPage() {
       setSearched(true)
     } catch (err) {
       console.error('Search error:', err)
-      setError('Search failed. Please try again.')
+      setError(t('common.error_retry'))
     } finally {
       setLoading(false)
     }
-  }, [query, filters])
+  }, [query, filters, t])
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-5 max-w-3xl mx-auto" style={{ fontFamily: 'var(--font-body)' }}>
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <h1 className="text-3xl font-bold text-[#0F172A] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>Search for Someone</h1>
-        <p className="text-[#475569] mb-8">Enter a name, description, or last known location to find a match.</p>
+        <h1 className="text-3xl font-bold text-[#0F172A] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
+          {t('search_page.title')}
+        </h1>
+        <p className="text-[#475569] mb-8">{t('search_page.subtitle')}</p>
 
         {/* Search bar */}
         <div className="flex gap-2 mb-3">
@@ -188,7 +185,7 @@ export default function SearchPage() {
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Name, location, or description..."
+              placeholder={t('search_page.placeholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -201,7 +198,7 @@ export default function SearchPage() {
             className="bg-[#1E3A8A] hover:bg-[#162D6B] text-white rounded-xl px-5 py-3 text-sm font-semibold transition-colors shadow-sm disabled:opacity-60 flex items-center gap-2"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            Search
+            {t('search_page.search_btn')}
           </button>
           <button
             onClick={() => setShowFilters((v) => !v)}
@@ -223,7 +220,7 @@ export default function SearchPage() {
             >
               <div className="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
                 <div>
-                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">Age</label>
+                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">{t('search_page.age_label')}</label>
                   <input
                     type="text" placeholder="e.g. 30"
                     value={filters.age}
@@ -232,7 +229,7 @@ export default function SearchPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">District</label>
+                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">{t('search_page.district_label')}</label>
                   <input
                     type="text" placeholder="e.g. Kozhikode"
                     value={filters.district}
@@ -241,13 +238,13 @@ export default function SearchPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">Gender</label>
+                  <label className="text-xs font-bold text-[#0F172A] block mb-1.5">{t('search_page.gender_label')}</label>
                   <select
                     value={filters.gender}
                     onChange={(e) => setFilters((f) => ({ ...f, gender: e.target.value }))}
                     className="w-full text-sm px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-[#1E3A8A]/30"
                   >
-                    <option value="">Any</option>
+                    <option value="">{t('search_page.any')}</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>
@@ -257,16 +254,16 @@ export default function SearchPage() {
           )}
         </AnimatePresence>
 
-        {/* Error */}
         {error && (
           <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">{error}</p>
         )}
 
-        {/* Results */}
         {searched && !loading && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
             <p className="text-sm text-[#475569] font-medium">
-              {results.length > 0 ? `${results.length} result${results.length > 1 ? 's' : ''} found` : 'No matches found. Try adjusting your search.'}
+              {results.length > 0
+                ? t(results.length === 1 ? 'search_page.results_found_one' : 'search_page.results_found_other', { count: results.length })
+                : t('search_page.no_results')}
             </p>
             {results.map((person, i) => (
               <MatchCard key={person.id} person={person} index={i} />
@@ -275,7 +272,7 @@ export default function SearchPage() {
         )}
 
         {!searched && !loading && (
-          <p className="text-center text-sm text-slate-400 mt-16">Enter a name or location above to begin searching.</p>
+          <p className="text-center text-sm text-slate-400 mt-16">{t('search_page.start_prompt')}</p>
         )}
       </motion.div>
     </div>

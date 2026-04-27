@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -24,6 +25,7 @@ const fadeUp = {
 };
 
 export default function Hero() {
+  const { t } = useTranslation();
   return (
     <section
       id="home"
@@ -41,7 +43,7 @@ export default function Hero() {
             className="inline-block rounded-full bg-[#1E3A8A]/5 border border-[#1E3A8A]/10 px-4 py-1.5 text-xs text-[#1E3A8A] tracking-widest uppercase"
             style={{ fontFamily: "var(--font-accent)" }}
           >
-            Disaster Response Platform
+            {t("hero.platform_label")}
           </span>
         </motion.div>
 
@@ -63,7 +65,7 @@ export default function Hero() {
           className="text-xl sm:text-2xl font-medium text-[#475569] max-w-2xl mx-auto"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          Reuniting families when it matters most. Fast. Reliable. Human.
+          {t("hero.tagline")}
         </motion.p>
 
         {/* Subtext */}
@@ -72,8 +74,7 @@ export default function Hero() {
           className="text-base sm:text-lg text-[#475569]/80 max-w-xl mx-auto"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          A disaster response platform that helps locate missing individuals,
-          report found persons, and coordinate rescue efforts in real time.
+          {t("hero.subtitle")}
         </motion.p>
 
         {/* 3 CTA Buttons */}
@@ -89,7 +90,7 @@ export default function Hero() {
               style={{ fontFamily: "var(--font-body)" }}
             >
               <Search className="w-4 h-4" />
-              Search for Someone
+              {t("hero.search_btn")}
             </Link>
           </motion.div>
 
@@ -101,7 +102,7 @@ export default function Hero() {
               style={{ fontFamily: "var(--font-body)" }}
             >
               <UserPlus className="w-4 h-4" />
-              Report Missing Person Now
+              {t("hero.report_btn")}
             </Link>
           </motion.div>
 
@@ -113,7 +114,7 @@ export default function Hero() {
               style={{ fontFamily: "var(--font-body)" }}
             >
               <UserPlus className="w-4 h-4" />
-              Report Found Person
+              {t("hero.report_found_btn")}
             </Link>
           </motion.div>
         </motion.div>
@@ -125,15 +126,15 @@ export default function Hero() {
         >
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800 font-semibold inline-flex items-center justify-center gap-1.5">
             <Phone className="w-3.5 h-3.5" />
-            National Emergency: 112
+            {t("hero.emergency_label")}
           </div>
           <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 font-semibold inline-flex items-center justify-center gap-1.5">
             <Clock3 className="w-3.5 h-3.5" />
-            Live data updates every minute
+            {t("hero.live_data_label")}
           </div>
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800 font-semibold inline-flex items-center justify-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
-            Verified rescue coordination
+            {t("hero.verified_label")}
           </div>
         </motion.div>
 
@@ -149,15 +150,15 @@ export default function Hero() {
               </span>
               <span>
                 <span className="block text-[11px] sm:text-xs font-bold tracking-[0.12em] uppercase text-[#1E3A8A]">
-                  Rescue Teams / NGOs
+                  {t("hero.rescue_teams_label")}
                 </span>
                 <span className="block text-sm sm:text-[15px] font-semibold text-[#0F172A]">
-                  Open Command Dashboard and coordinate live operations
+                  {t("hero.rescue_cta")}
                 </span>
               </span>
             </span>
             <span className="inline-flex items-center gap-1 text-sm font-bold text-[#1E3A8A] shrink-0">
-              Enter
+              {t("hero.enter")}
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </Link>

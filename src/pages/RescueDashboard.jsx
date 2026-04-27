@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { LogOut, ShieldCheck, Loader2, Radio, Sparkles, LayoutList } from "lucide-react";
 import CommandMap from "../components/rescue/CommandMap";
 import TaskBoard from "../components/rescue/TaskBoard";
@@ -12,6 +13,7 @@ import {
 
 // ── Login Gate ────────────────────────────────────────────────────────────
 function LoginGate({ onLogin, loading }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F8FAFC] to-[#E0F2FE]">
       <motion.div
@@ -26,11 +28,10 @@ function LoginGate({ onLogin, loading }) {
           className="text-2xl font-bold text-[#0F172A] mb-2"
           style={{ fontFamily: "var(--font-heading)" }}
         >
-          Rescue Access
+          {t("rescue_page.access_title")}
         </h1>
         <p className="text-sm text-[#475569] mb-8 leading-relaxed">
-          This dashboard is restricted to authorised rescue team members. Sign
-          in with your Google account to continue.
+          {t("rescue_page.access_subtitle")}
         </p>
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -43,25 +44,13 @@ function LoginGate({ onLogin, loading }) {
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (
             <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="#fff"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="#fff"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#fff"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-              />
-              <path
-                fill="#fff"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
+              <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+              <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
           )}
-          {loading ? "Signing in…" : "Sign in with Google"}
+          {loading ? t("rescue_page.signing_in") : t("rescue_page.sign_in_btn")}
         </motion.button>
       </motion.div>
     </div>
@@ -70,13 +59,13 @@ function LoginGate({ onLogin, loading }) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────
 export default function RescueDashboard() {
+  const { t } = useTranslation();
   const [user, setUser] = useState(undefined); // undefined = loading
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState(null);
   const [mobileView, setMobileView] = useState("board");
   const [leftTab, setLeftTab] = useState("board"); // "board" | "ai"
 
-  // Track auth state
   useEffect(() => {
     const unsub = onAuthChange((u) => setUser(u));
     return () => unsub();
@@ -88,7 +77,7 @@ export default function RescueDashboard() {
     try {
       await signInWithGoogle();
     } catch (err) {
-      setLoginError("Sign-in failed. Please try again.");
+      setLoginError(t("rescue_page.sign_in_failed"));
       console.error(err);
     } finally {
       setLoginLoading(false);
@@ -104,7 +93,7 @@ export default function RescueDashboard() {
     );
   }
 
-  // Not logged in or anonymous user → show login gate
+  // Not logged in or anonymous → show login gate
   if (!user || user.isAnonymous) {
     return (
       <>
@@ -126,27 +115,24 @@ export default function RescueDashboard() {
     >
       <div className="shrink-0 h-[96px]" />
 
+      {/* Mobile tab switcher */}
       <div className="md:hidden px-4 py-2 border-b border-slate-300 bg-white">
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setMobileView("board")}
             className={`rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
-              mobileView === "board"
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600"
+              mobileView === "board" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"
             }`}
           >
-            Search Board
+            {t("rescue_page.tab_board")}
           </button>
           <button
             onClick={() => setMobileView("map")}
             className={`rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-colors ${
-              mobileView === "map"
-                ? "bg-slate-900 text-white"
-                : "bg-slate-100 text-slate-600"
+              mobileView === "map" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"
             }`}
           >
-            Command Map
+            {t("rescue_page.tab_map")}
           </button>
         </div>
       </div>
@@ -174,7 +160,9 @@ export default function RescueDashboard() {
                   className="w-8 h-8 rounded-full"
                 />
                 <div className="min-w-0">
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">Operator</p>
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                    {t("rescue_page.operator_label")}
+                  </p>
                   <p className="text-xs font-semibold text-slate-700 truncate">
                     {user.displayName || user.email}
                   </p>
@@ -184,7 +172,7 @@ export default function RescueDashboard() {
                 onClick={signOutUser}
                 className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-red-600 transition-colors"
               >
-                <LogOut className="w-3.5 h-3.5" /> Sign out
+                <LogOut className="w-3.5 h-3.5" /> {t("rescue_page.sign_out")}
               </button>
             </div>
 
@@ -199,7 +187,7 @@ export default function RescueDashboard() {
                 }`}
               >
                 <LayoutList className="w-3.5 h-3.5" />
-                Search Board
+                {t("rescue_page.tab_board")}
               </button>
               <button
                 onClick={() => setLeftTab("ai")}
@@ -210,7 +198,7 @@ export default function RescueDashboard() {
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                AI Matches
+                {t("rescue_page.tab_ai")}
               </button>
             </div>
           </div>
@@ -221,10 +209,10 @@ export default function RescueDashboard() {
               <>
                 <div className="flex items-center justify-between px-1">
                   <h2 className="emergency-heading text-lg tracking-wide text-slate-900">
-                    Emergency Search Board
+                    {t("rescue_page.board_title")}
                   </h2>
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-red-600 uppercase tracking-wide">
-                    <Radio className="w-3.5 h-3.5" /> Live
+                    <Radio className="w-3.5 h-3.5" /> {t("rescue_page.live")}
                   </span>
                 </div>
                 <TaskBoard user={user} />

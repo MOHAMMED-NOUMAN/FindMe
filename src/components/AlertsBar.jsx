@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Tent,
   AlertTriangle,
@@ -12,13 +12,14 @@ import { useState } from "react";
 import { findNearestReliefCamp } from "../services/campsService";
 
 export default function AlertsBar() {
+  const { t } = useTranslation();
   const [loadingCamp, setLoadingCamp] = useState(false);
   const [campError, setCampError] = useState(null);
   const [nearestCamp, setNearestCamp] = useState(null);
 
   const handleFindNearestCamp = () => {
     if (!navigator.geolocation) {
-      setCampError("Geolocation is not supported on this device.");
+      setCampError(t("alerts_bar.no_geo"));
       return;
     }
 
@@ -31,26 +32,20 @@ export default function AlertsBar() {
           const { latitude, longitude } = pos.coords;
           const nearest = await findNearestReliefCamp(latitude, longitude);
           if (!nearest) {
-            setCampError(
-              "No nearby relief camp found. Please call 112 for assistance.",
-            );
+            setCampError(t("alerts_bar.no_camp"));
             setNearestCamp(null);
             return;
           }
           setNearestCamp(nearest);
         } catch (err) {
-          setCampError(
-            err?.message || "Unable to find nearest camp right now.",
-          );
+          setCampError(err?.message || t("alerts_bar.no_camp"));
           setNearestCamp(null);
         } finally {
           setLoadingCamp(false);
         }
       },
       () => {
-        setCampError(
-          "Location permission denied. Enable location to find nearest camp.",
-        );
+        setCampError(t("alerts_bar.location_denied"));
         setLoadingCamp(false);
       },
       { enableHighAccuracy: true, timeout: 12000 },
@@ -64,12 +59,12 @@ export default function AlertsBar() {
     >
       <div className="bg-[#1E3A8A] text-white text-sm py-2.5 px-5 flex items-center justify-center gap-2 font-medium rounded-xl shadow-sm">
         <AlertTriangle className="w-4 h-4 text-amber-300 shrink-0" />
-        <span>Kerala Floods</span>
+        <span>{t("alerts_bar.event_name")}</span>
         <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wide uppercase">
-          Critical
+          {t("alerts_bar.critical")}
         </span>
         <span className="text-white/60 hidden sm:inline">
-          — Stay informed. Help is on the way.
+          — {t("alerts_bar.stay_informed")}
         </span>
       </div>
 
@@ -85,9 +80,7 @@ export default function AlertsBar() {
             ) : (
               <Tent className="w-4 h-4" />
             )}
-            {loadingCamp
-              ? "Locating nearest camp..."
-              : "Find Nearest Relief Camp"}
+            {loadingCamp ? t("alerts_bar.locating") : t("alerts_bar.find_camp_btn")}
           </button>
         </motion.div>
       </div>
@@ -100,16 +93,14 @@ export default function AlertsBar() {
 
       {nearestCamp && (
         <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          <p className="font-bold text-emerald-800">
-            Nearest Relief Camp Found
-          </p>
+          <p className="font-bold text-emerald-800">{t("alerts_bar.camp_found")}</p>
           <p className="mt-1 font-semibold">{nearestCamp.name}</p>
           <p className="mt-1 inline-flex items-center gap-1.5 text-emerald-800">
             <MapPin className="w-3.5 h-3.5" />
             {nearestCamp.locationLabel ||
               nearestCamp.description ||
               nearestCamp.address ||
-              "Location details unavailable"}
+              t("alerts_bar.location_unavailable")}
           </p>
           {nearestCamp.phone && (
             <p className="mt-1 inline-flex items-center gap-1.5 text-emerald-800">
@@ -118,12 +109,11 @@ export default function AlertsBar() {
             </p>
           )}
           <p className="mt-1 text-emerald-700 font-semibold">
-            Approx distance: {nearestCamp.distanceKm.toFixed(1)} km
+            {t("alerts_bar.approx_distance", { dist: nearestCamp.distanceKm.toFixed(1) })}
             <span className="ml-2 text-[11px] uppercase tracking-wide text-emerald-600">
-              Source:{" "}
               {nearestCamp.source === "firestore"
-                ? "Verified camps data"
-                : "OpenStreetMap"}
+                ? t("alerts_bar.source_verified")
+                : t("alerts_bar.source_osm")}
             </span>
           </p>
 
@@ -135,7 +125,7 @@ export default function AlertsBar() {
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg px-3 py-2 transition-colors"
             >
               <Navigation className="w-3.5 h-3.5" />
-              Open In Google Maps
+              {t("alerts_bar.open_maps")}
             </a>
 
             <a
@@ -144,7 +134,7 @@ export default function AlertsBar() {
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-800 bg-white border border-emerald-300 hover:bg-emerald-100 rounded-lg px-3 py-2 transition-colors"
             >
-              Open In OSM
+              {t("alerts_bar.open_osm")}
             </a>
           </div>
         </div>

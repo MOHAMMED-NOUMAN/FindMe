@@ -1,21 +1,15 @@
 import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
 import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
 import indiaData from '../data/indiaStatesDistricts.json'
 
-const STEPS = [
-  { title: 'Person Details', icon: User },
-  { title: 'Last Seen', icon: MapPin },
-  { title: 'Photos & Description', icon: Camera },
-  { title: 'Your Contact', icon: Phone },
-]
-
-function StepIndicator({ current }) {
+function StepIndicator({ current, steps }) {
   return (
     <div className="flex items-center justify-center gap-0 mb-10">
-      {STEPS.map((step, i) => {
+      {steps.map((step, i) => {
         const Icon = step.icon
         const done = i < current
         const active = i === current
@@ -33,7 +27,7 @@ function StepIndicator({ current }) {
                 {step.title}
               </span>
             </div>
-            {i < STEPS.length - 1 && (
+            {i < steps.length - 1 && (
               <div className={`w-12 sm:w-16 h-0.5 mx-1 mb-5 transition-all duration-300 ${done ? 'bg-[#1E3A8A]' : 'bg-slate-200'}`} />
             )}
           </div>
@@ -43,7 +37,7 @@ function StepIndicator({ current }) {
   )
 }
 
-function Step1({ data, onChange }) {
+function Step1({ data, onChange, t }) {
   const [checking, setChecking] = useState(false)
   const [possibleMatches, setPossibleMatches] = useState([])
 
@@ -54,9 +48,7 @@ function Step1({ data, onChange }) {
     try {
       const matches = await checkDuplicates(val)
       setPossibleMatches(matches)
-    } catch {
-      // non-critical
-    } finally {
+    } catch { /* non-critical */ } finally {
       setChecking(false)
     }
   }
@@ -65,7 +57,7 @@ function Step1({ data, onChange }) {
     <div className="space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Full Name</label>
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.full_name')}</label>
           <div className="relative">
             <input
               type="text" placeholder="e.g. Rajan Kumar"
@@ -83,7 +75,7 @@ function Step1({ data, onChange }) {
               >
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700 mb-2">
                   <AlertCircle className="w-3.5 h-3.5" />
-                  Possible matches found — check before submitting
+                  {t('report_page.possible_match_warning')}
                 </div>
                 {possibleMatches.map((m, i) => (
                   <p key={i} className="text-xs text-amber-800 py-0.5">
@@ -95,7 +87,7 @@ function Step1({ data, onChange }) {
           </AnimatePresence>
         </div>
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Age (approximate)</label>
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.age')}</label>
           <input
             type="text" placeholder="e.g. 34 or 30–40"
             value={data.age}
@@ -106,26 +98,22 @@ function Step1({ data, onChange }) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Gender</label>
-          <select
-            value={data.gender}
-            onChange={(e) => onChange('gender', e.target.value)}
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.gender')}</label>
+          <select value={data.gender} onChange={(e) => onChange('gender', e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           >
-            <option value="">Select</option>
+            <option value="">{t('report_page.select')}</option>
             <option>Male</option>
             <option>Female</option>
             <option>Other</option>
           </select>
         </div>
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Your Relationship</label>
-          <select
-            value={data.relationship}
-            onChange={(e) => onChange('relationship', e.target.value)}
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.relationship')}</label>
+          <select value={data.relationship} onChange={(e) => onChange('relationship', e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           >
-            <option value="">Select</option>
+            <option value="">{t('report_page.select')}</option>
             <option>Parent</option>
             <option>Spouse</option>
             <option>Child</option>
@@ -139,18 +127,18 @@ function Step1({ data, onChange }) {
   )
 }
 
-function Step2({ data, onChange }) {
+function Step2({ data, onChange, t }) {
   const selectedStateObj = indiaData.states.find(s => s.name === data.state)
   const districts = selectedStateObj ? selectedStateObj.districts : []
 
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">Last Seen Location</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.last_seen')}</label>
         <div className="relative">
           <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
-            type="text" placeholder="Street, landmark, or area"
+            type="text" placeholder={t('report_page.street_placeholder')}
             value={data.location}
             onChange={(e) => onChange('location', e.target.value)}
             className="w-full pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
@@ -159,72 +147,52 @@ function Step2({ data, onChange }) {
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Date Last Seen</label>
-          <input
-            type="date"
-            value={data.date}
-            onChange={(e) => onChange('date', e.target.value)}
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.date_seen')}</label>
+          <input type="date" value={data.date} onChange={(e) => onChange('date', e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           />
         </div>
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">Approx. Time</label>
-          <input
-            type="time"
-            value={data.time}
-            onChange={(e) => onChange('time', e.target.value)}
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.time_seen')}</label>
+          <input type="time" value={data.time} onChange={(e) => onChange('time', e.target.value)}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">State</label>
-          <select
-            value={data.state || ''}
-            onChange={(e) => {
-              onChange('state', e.target.value)
-              onChange('district', '')
-              onChange('customDistrict', '')
-            }}
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.state')}</label>
+          <select value={data.state || ''} onChange={(e) => { onChange('state', e.target.value); onChange('district', ''); onChange('customDistrict', '') }}
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           >
-            <option value="">Select State</option>
+            <option value="">{t('report_page.select_state')}</option>
             {indiaData.states.map((s) => <option key={s.name} value={s.name}>{s.name}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-bold text-[#0F172A] mb-2">District / City</label>
+          <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.district')}</label>
           {data.district === 'Other' ? (
             <div className="relative">
               <input
-                type="text"
-                placeholder="Type district name"
+                type="text" placeholder={t('report_page.type_district')}
                 value={data.customDistrict || ''}
                 onChange={(e) => onChange('customDistrict', e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
               />
-              <button 
-                type="button"
-                onClick={() => { onChange('district', ''); onChange('customDistrict', ''); }}
+              <button type="button" onClick={() => { onChange('district', ''); onChange('customDistrict', '') }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <select
-              value={data.district || ''}
-              onChange={(e) => {
-                onChange('district', e.target.value)
-                if (e.target.value !== 'Other') onChange('customDistrict', '')
-              }}
+            <select value={data.district || ''} onChange={(e) => { onChange('district', e.target.value); if (e.target.value !== 'Other') onChange('customDistrict', '') }}
               disabled={!data.state}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 disabled:opacity-50"
             >
-              <option value="">Select District</option>
+              <option value="">{t('report_page.select_district')}</option>
               {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-              {data.state && <option value="Other">Other (Type below)</option>}
+              {data.state && <option value="Other">{t('report_page.other_district')}</option>}
             </select>
           )}
         </div>
@@ -233,7 +201,7 @@ function Step2({ data, onChange }) {
   )
 }
 
-function Step3({ data, onChange }) {
+function Step3({ data, onChange, t }) {
   const [preview, setPreview] = useState(null)
   const fileInputRef = useRef(null)
 
@@ -244,39 +212,34 @@ function Step3({ data, onChange }) {
     setPreview(URL.createObjectURL(file))
   }
 
-  const handleBoxClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
-
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">Upload Photo</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.upload')}</label>
         {preview ? (
           <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-200">
             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
-            <button
-              onClick={() => { setPreview(null); onChange('photoFile', null) }}
+            <button onClick={() => { setPreview(null); onChange('photoFile', null) }}
               className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5"
             >
               <X className="w-3 h-3 text-white" />
             </button>
           </div>
         ) : (
-          <div onClick={handleBoxClick} className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors">
+          <div onClick={() => fileInputRef.current?.click()}
+            className="block w-full border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-colors"
+          >
             <Camera className="w-8 h-8 mx-auto mb-2 text-slate-400" />
-            <p className="text-sm font-medium text-slate-500">Click to upload a photo</p>
-            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 5MB</p>
+            <p className="text-sm font-medium text-slate-500">{t('report_page.click_upload')}</p>
+            <p className="text-xs text-slate-400 mt-1">{t('report_page.file_hint')}</p>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
           </div>
         )}
       </div>
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">Physical Description</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.physical_desc')}</label>
         <textarea
-          placeholder="Height, clothing color, hair, identifying marks..."
+          placeholder={t('report_page.desc_placeholder')}
           rows={4}
           value={data.description}
           onChange={(e) => onChange('description', e.target.value)}
@@ -287,11 +250,11 @@ function Step3({ data, onChange }) {
   )
 }
 
-function Step4({ data, onChange }) {
+function Step4({ data, onChange, t }) {
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">Your Phone Number</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.phone')}</label>
         <div className="relative">
           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -301,12 +264,12 @@ function Step4({ data, onChange }) {
             className="w-full pl-10 pr-4 bg-slate-50 border border-slate-200 rounded-xl py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
           />
         </div>
-        <p className="text-xs text-slate-400 mt-1.5">Rescue teams will use this to contact you with updates</p>
+        <p className="text-xs text-slate-400 mt-1.5">{t('report_page.phone_hint')}</p>
       </div>
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">Alternate Contact (optional)</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.alt_phone')}</label>
         <input
-          type="tel" placeholder="Another number we can reach you at"
+          type="tel" placeholder={t('report_page.another_number')}
           value={data.altPhone}
           onChange={(e) => onChange('altPhone', e.target.value)}
           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
@@ -319,15 +282,13 @@ function Step4({ data, onChange }) {
           onChange={(e) => onChange('consent', e.target.checked)}
           className="mt-0.5 w-4 h-4 accent-[#1E3A8A]"
         />
-        <span className="text-sm text-[#475569] leading-relaxed">
-          I confirm the information provided is accurate and consent to sharing it with rescue authorities for the purpose of locating this person.
-        </span>
+        <span className="text-sm text-[#475569] leading-relaxed">{t('report_page.consent')}</span>
       </label>
     </div>
   )
 }
 
-function Confirmation({ refId, personName, reportId }) {
+function Confirmation({ refId, personName, reportId, t }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -338,29 +299,27 @@ function Confirmation({ refId, personName, reportId }) {
         <Check className="w-8 h-8 text-emerald-600" />
       </div>
       <h2 className="text-2xl font-bold text-[#0F172A]" style={{ fontFamily: 'var(--font-heading)' }}>
-        Report Submitted
+        {t('report_page.confirmation_title')}
       </h2>
       <p className="text-[#475569] max-w-sm mx-auto text-sm leading-relaxed">
         Your report for <strong>{personName}</strong> has been received. Our team will begin searching and contact you with any updates.
       </p>
       <div className="bg-[#1E3A8A]/5 border border-[#1E3A8A]/10 rounded-xl px-6 py-4 inline-block">
-        <p className="text-xs text-[#475569] font-medium uppercase tracking-wide mb-1">Reference ID</p>
+        <p className="text-xs text-[#475569] font-medium uppercase tracking-wide mb-1">{t('report_page.ref_id_label')}</p>
         <p className="text-xl font-bold text-[#1E3A8A]">{refId}</p>
       </div>
-      <p className="text-xs text-slate-400">Save this ID to track your report status</p>
+      <p className="text-xs text-slate-400">{t('report_page.save_id')}</p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-        <Link
-          to={`/track/${refId}`}
+        <Link to={`/track/${refId}`}
           className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-[#1E3A8A] text-white text-sm font-semibold hover:bg-[#162D6B] transition-colors"
         >
-          Track Progress
+          {t('report_page.track_progress')}
         </Link>
         {reportId && (
-          <Link
-            to={`/results/${reportId}`}
+          <Link to={`/results/${reportId}`}
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-slate-200 text-[#1E3A8A] text-sm font-semibold hover:bg-[#1E3A8A]/5 transition-colors"
           >
-            View Match Analysis
+            {t('report_page.view_match')}
           </Link>
         )}
       </div>
@@ -369,12 +328,20 @@ function Confirmation({ refId, personName, reportId }) {
 }
 
 export default function ReportPage() {
+  const { t } = useTranslation()
   const [step, setStep] = useState(0)
   const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [refId, setRefId] = useState('')
   const [reportId, setReportId] = useState('')
+
+  const STEPS = [
+    { title: t('report_page.step_person'),   icon: User },
+    { title: t('report_page.step_location'), icon: MapPin },
+    { title: t('report_page.step_photos'),   icon: Camera },
+    { title: t('report_page.step_contact'),  icon: Phone },
+  ]
 
   const [form, setForm] = useState({
     name: '', age: '', gender: '', relationship: '',
@@ -410,11 +377,8 @@ export default function ReportPage() {
     setError(null)
     try {
       const submitData = { ...form }
-      if (submitData.district === 'Other') {
-        submitData.district = submitData.customDistrict
-      }
+      if (submitData.district === 'Other') { submitData.district = submitData.customDistrict }
       delete submitData.customDistrict
-
       const result = await submitMissingPersonReport(submitData)
       setRefId(result.refId)
       setReportId(result.id)
@@ -433,53 +397,44 @@ export default function ReportPage() {
         {!submitted && (
           <>
             <h1 className="text-3xl font-bold text-[#0F172A] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>
-              Report Missing Person
+              {t('report_page.title')}
             </h1>
-            <p className="text-[#475569] mb-8 text-sm">Please provide as much detail as you can. This helps us search faster.</p>
-            <StepIndicator current={step} />
+            <p className="text-[#475569] mb-8 text-sm">{t('report_page.subtitle')}</p>
+            <StepIndicator current={step} steps={STEPS} />
           </>
         )}
 
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
           {submitted ? (
-            <Confirmation refId={refId} personName={form.name} reportId={reportId} />
+            <Confirmation refId={refId} personName={form.name} reportId={reportId} t={t} />
           ) : (
             <>
               <h2 className="text-lg font-bold text-[#0F172A] mb-6 flex items-center gap-2">
                 <span className="text-sm bg-[#1E3A8A]/10 text-[#1E3A8A] px-2 py-0.5 rounded-full font-bold">
-                  Step {step + 1} / {STEPS.length}
+                  {t('report_page.step_label', { current: step + 1, total: STEPS.length })}
                 </span>
                 {STEPS[step].title}
               </h2>
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
-                  {error}
-                </div>
+                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
               )}
 
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={step}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {step === 0 && <Step1 data={stepData[0]} onChange={setField} />}
-                  {step === 1 && <Step2 data={stepData[1]} onChange={setField} />}
-                  {step === 2 && <Step3 data={stepData[2]} onChange={setField} />}
-                  {step === 3 && <Step4 data={stepData[3]} onChange={setField} />}
+                <motion.div key={step} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.25 }}>
+                  {step === 0 && <Step1 data={stepData[0]} onChange={setField} t={t} />}
+                  {step === 1 && <Step2 data={stepData[1]} onChange={setField} t={t} />}
+                  {step === 2 && <Step3 data={stepData[2]} onChange={setField} t={t} />}
+                  {step === 3 && <Step4 data={stepData[3]} onChange={setField} t={t} />}
                 </motion.div>
               </AnimatePresence>
 
               <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
                 {step > 0 ? (
-                  <button
-                    onClick={() => setStep((s) => s - 1)}
+                  <button onClick={() => setStep((s) => s - 1)}
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#475569] hover:bg-slate-100 transition-colors"
                   >
-                    <ChevronLeft className="w-4 h-4" /> Back
+                    <ChevronLeft className="w-4 h-4" /> {t('report_page.back')}
                   </button>
                 ) : <div />}
 
@@ -491,7 +446,7 @@ export default function ReportPage() {
                     className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-sm font-semibold transition-colors
                       ${canNext() ? 'bg-[#1E3A8A] hover:bg-[#162D6B] text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
                   >
-                    Next <ChevronRight className="w-4 h-4" />
+                    {t('report_page.next')} <ChevronRight className="w-4 h-4" />
                   </motion.button>
                 ) : (
                   <motion.button
@@ -503,8 +458,8 @@ export default function ReportPage() {
                       ${canNext() && !submitting ? 'bg-[#FB7185] hover:bg-[#f43f5e] text-white shadow-md shadow-[#FB7185]/20' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
                   >
                     {submitting
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
-                      : <><Check className="w-4 h-4" /> Submit Report</>
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {t('report_page.submitting')}</>
+                      : <><Check className="w-4 h-4" /> {t('report_page.submit')}</>
                     }
                   </motion.button>
                 )}

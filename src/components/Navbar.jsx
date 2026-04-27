@@ -43,9 +43,7 @@ export default function Navbar() {
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
   useEffect(() => {
@@ -137,20 +135,20 @@ export default function Navbar() {
                             : "text-[#475569] hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
                         }`}
                     >
-                      {key === "track" ? "Track" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
+                      {t(`navbar.${key}`)}
                     </Link>
                   </li>
                 );
               })}
             </ul>
 
-            {/* Right: Language + Hamburger */}
+            {/* Right: Language + CTA + Hamburger */}
             <div className="flex items-center gap-2">
               <Link
                 to="/rescue"
                 className="hidden md:flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg bg-[#1E3A8A] text-white hover:bg-[#162D6B] transition-colors shadow-sm"
               >
-                Rescue
+                {t("navbar.rescue")}
               </Link>
               <div className="relative">
                 <button
@@ -245,7 +243,7 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="block px-4 py-3 text-base font-medium text-[#475569] rounded-xl transition-colors hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
                     >
-                      {key === "track" ? "Track" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
+                      {t(`navbar.${key}`)}
                     </Link>
                   </li>
                 ))}
@@ -255,7 +253,7 @@ export default function Navbar() {
                     onClick={() => setMobileOpen(false)}
                     className="block px-4 py-3 text-base font-semibold bg-[#1E3A8A] text-white rounded-xl transition-colors hover:bg-[#162D6B] mt-2 text-center"
                   >
-                    Rescue
+                    {t("navbar.rescue")}
                   </Link>
                 </li>
               </ul>
