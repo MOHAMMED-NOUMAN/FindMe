@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
-import { LogOut, ShieldCheck, Loader2, Radio, Sparkles, LayoutList } from "lucide-react";
+import { LogOut, ShieldCheck, Loader2, Radio, Sparkles, LayoutList, Share2, MessageSquareWarning } from "lucide-react";
 import CommandMap from "../components/rescue/CommandMap";
 import TaskBoard from "../components/rescue/TaskBoard";
 import RescueExchange from "../components/rescue/RescueExchange";
@@ -191,39 +191,6 @@ export default function RescueDashboard() {
               >
                 <LayoutList className="w-3.5 h-3.5" />
                 {t("rescue_page.tab_board")}
-              </button>
-              <button
-                onClick={() => setLeftTab("safe")}
-                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
-                  leftTab === "safe"
-                    ? "bg-white text-emerald-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Safe
-              </button>
-              <button
-                onClick={() => setLeftTab("exchange")}
-                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
-                  leftTab === "exchange"
-                    ? "bg-white text-emerald-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Exchange
-              </button>
-              <button
-                onClick={() => setLeftTab("comms")}
-                className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all ${
-                  leftTab === "comms"
-                    ? "bg-white text-red-700 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                }`}
-              >
-                <MessageSquareWarning className="w-3.5 h-3.5" />
-                Comms
               </button>
               <button
                 onClick={() => setLeftTab("safe")}

@@ -88,23 +88,23 @@ export default function Navbar() {
         const place =
           person.lastKnownLocation?.description ||
           person.lastKnownLocation?.district ||
-          "location unknown";
+          t("common.not_available");
         const ageLabel =
           person.age !== null && person.age !== undefined && String(person.age).trim()
             ? ` (${person.age})`
             : "";
-        return `URGENT: ${person.name || "Unknown"}${ageLabel} last seen in ${place}`;
+        return t("navbar.marquee.urgent", { name: person.name || t("ai_match.unknown"), age: ageLabel, place });
       })
-    : ["No active missing person alerts right now"];
+    : [t("navbar.marquee.no_alerts")];
 
   const statMessages = [
-    `Active Missing Reports: ${missingReports.length}`,
-    `Missing Children: ${missingChildrenCount}`,
-    `Safe Check-ins Received: ${safeReportsCount}`,
-    "Unified Emergency Helpline: 112",
-    "Police: 100",
-    "Women Helpline: 1091",
-    "Childline: 1098",
+    t("navbar.marquee.active_reports", { count: missingReports.length }),
+    t("navbar.marquee.missing_children", { count: missingChildrenCount }),
+    t("navbar.marquee.safe_checkins", { count: safeReportsCount }),
+    t("navbar.marquee.helpline"),
+    t("navbar.marquee.police"),
+    t("navbar.marquee.women"),
+    t("navbar.marquee.childline"),
   ];
 
   const messages = [...alertMessages, ...statMessages];
@@ -302,7 +302,7 @@ export default function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="block px-4 py-3 text-base font-medium text-[#475569] rounded-xl transition-colors hover:text-[#1E3A8A] hover:bg-[#1E3A8A]/5"
                     >
-                      {key === "track" ? "Track" : key === "reportFound" ? "Report Found Person" : t(`navbar.${key}`)}
+                      {t(`navbar.${key}`)}
                     </Link>
                   </li>
                 ))}

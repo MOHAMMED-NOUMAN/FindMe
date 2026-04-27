@@ -42,17 +42,17 @@
     "track": "Track",
     "reportFound": "Report Found Person",
     "rescue": "Rescue",
-    "live": "LIVE",
-    "marquee": [
-      "🚨 AMBER ALERT: Rahul Sharma (8) last seen in Jaipur, Rajasthan",
-      "🚨 MISSING: Priya Patel (24) last seen in Mumbai (Andheri West)",
-      "🚨 RECENT: Amit Singh (45) last seen in Delhi (Connaught Place)",
-      "🚨 URGENT: Ananya Das (12) last seen in Kolkata (Salt Lake)",
-      "📞 Unified Emergency Helpline: 112",
-      "👶 Missing Children (Childline): 1098",
-      "👮 Police: 100",
-      "🛡️ Women Helpline: 1091"
-    ]
+    "marquee": {
+      "urgent": "URGENT: {{name}}{{age}} last seen in {{place}}",
+      "no_alerts": "No active missing person alerts right now",
+      "active_reports": "Active Missing Reports: {{count}}",
+      "missing_children": "Missing Children: {{count}}",
+      "safe_checkins": "Safe Check-ins Received: {{count}}",
+      "helpline": "📞 Unified Emergency Helpline: 112",
+      "police": "👮 Police: 100",
+      "women": "🛡️ Women Helpline: 1091",
+      "childline": "👶 Childline: 1098"
+    }
   },
   "hero": {
     "platform_label": "Disaster Response Platform",
