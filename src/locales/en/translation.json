@@ -235,8 +235,10 @@
     "view_match": "View Match Analysis"
   },
   "track_page": {
-    "title": "Check Report Progress",
+    "title": "Track Your Report",
     "subtitle": "Enter the reference number given after a missing-person report, such as FM-A3B9C1.",
+    "subtitle_prefix": "Enter the reference number (e.g.",
+    "subtitle_suffix": "submitted report.",
     "ref_label": "Reference Number",
     "check_btn": "Check",
     "checking": "Checking current progress...",
@@ -263,7 +265,16 @@
     "step_rescue_desc_pending": "Rescue teams can review the case and update action from their dashboard.",
     "step_resolution_title": "Case resolution",
     "step_resolution_desc_done": "This person has been marked as found.",
-    "step_resolution_desc_pending": "This step completes when the person is verified as found."
+    "step_resolution_desc_pending": "This step completes when the person is verified as found.",
+    "live_updated": "Live — last updated {{time}}",
+    "no_report_loaded": "No report loaded yet",
+    "something_wrong": "Something went wrong",
+    "last_seen_date": "Last seen date",
+    "district": "District",
+    "case_timeline": "Case timeline",
+    "person_located": "Person located",
+    "verified_by": "Verified by {{name}}",
+    "case_resolved": "This case has been successfully resolved."
   },
   "ai_match": {
     "engine_title": "AI Match Engine",

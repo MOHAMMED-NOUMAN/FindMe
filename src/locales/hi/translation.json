@@ -261,7 +261,18 @@
     "step_rescue_desc_pending": "बचाव दल केस की समीक्षा कर सकते हैं और अपने डैशबोर्ड से अपडेट कर सकते हैं।",
     "step_resolution_title": "केस समाधान",
     "step_resolution_desc_done": "इस व्यक्ति को मिला हुआ चिह्नित किया गया है।",
-    "step_resolution_desc_pending": "यह चरण तब पूरा होगा जब व्यक्ति को मिला हुआ सत्यापित किया जाएगा।"
+    "step_resolution_desc_pending": "यह चरण तब पूरा होगा जब व्यक्ति को मिला हुआ सत्यापित किया जाएगा।",
+    "subtitle_prefix": "संदर्भ नंबर दर्ज करें (जैसे",
+    "subtitle_suffix": "जमा की गई रिपोर्ट से।",
+    "live_updated": "लाइव — अंतिम अपडेट {{time}}",
+    "no_report_loaded": "अभी कोई रिपोर्ट लोड नहीं हुई",
+    "something_wrong": "कुछ गलत हुआ",
+    "last_seen_date": "अंतिम बार देखे जाने की तारीख",
+    "district": "जिला",
+    "case_timeline": "केस टाइमलाइन",
+    "person_located": "व्यक्ति मिल गया",
+    "verified_by": "{{name}} द्वारा सत्यापित",
+    "case_resolved": "यह केस सफलतापूर्वक हल हो चुका है।"
   },
   "ai_match": {
     "engine_title": "एआई मिलान इंजन",

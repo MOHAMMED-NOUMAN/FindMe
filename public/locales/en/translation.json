@@ -235,7 +235,7 @@
     "view_match": "View Match Analysis"
   },
   "track_page": {
-    "title": "Check Report Progress",
+    "title": "Track Your Report",
     "subtitle": "Enter the reference number given after a missing-person report, such as FM-A3B9C1.",
     "ref_label": "Reference Number",
     "check_btn": "Check",
@@ -250,6 +250,10 @@
     "last_updated": "Last updated",
     "reported_on": "Reported on",
     "view_match": "View match analysis",
+    "reference_label": "Reference",
+    "case_timeline": "Case timeline",
+    "person_located": "Person located",
+    "case_resolved_msg": "This case has been successfully resolved.",
     "status_active": "Active search",
     "status_found": "Found",
     "status_closed": "Closed",

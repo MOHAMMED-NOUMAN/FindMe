@@ -18,23 +18,24 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { subscribeMissingPersonByReference } from "../firebase/missingPersons";
+import { useTranslation } from "react-i18next";
 
 // ── Status config ─────────────────────────────────────────────────────────────
 const STATUS_CONFIG = {
   missing: {
-    label: "Active search",
+    labelKey: "status_active",
     dot: "bg-amber-400",
     pill: "bg-amber-50 text-amber-700 border border-amber-200",
     pulse: true,
   },
   found: {
-    label: "Person found",
+    labelKey: "status_found",
     dot: "bg-emerald-500",
     pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",
     pulse: false,
   },
   closed: {
-    label: "Case closed",
+    labelKey: "status_closed",
     dot: "bg-slate-400",
     pill: "bg-slate-100 text-slate-600 border border-slate-200",
     pulse: false,
@@ -56,40 +57,40 @@ function formatDate(value) {
 }
 
 // ── Build progress steps from report data ────────────────────────────────────
-function buildSteps(report) {
+function buildSteps(report, t) {
   const hasScore = typeof report?.composite_score === "number";
   const hasMatch = Boolean(report?.found_person_id || report?.matchedWith);
   const isFound = report?.status === "found";
 
   return [
     {
-      title: "Report received",
-      description: "Your reference number is registered in the missing persons system.",
+      title: t("track_page.step_received_title"),
+      description: t("track_page.step_received_desc"),
       state: "done",
       icon: ClipboardCheck,
     },
     {
-      title: "AI & database check",
+      title: t("track_page.step_ai_title"),
       description:
         hasScore || hasMatch
-          ? "Report compared against available found-person records — analysis complete."
-          : "System is scanning possible matches and nearby records.",
+          ? t("track_page.step_ai_desc_done")
+          : t("track_page.step_ai_desc_pending"),
       state: hasScore || hasMatch || isFound ? "done" : "active",
       icon: FileSearch,
     },
     {
-      title: "Rescue team follow-up",
+      title: t("track_page.step_rescue_title"),
       description: isFound
-        ? "Field follow-up has been completed for this case."
-        : "Rescue teams can review the case and update actions from their dashboard.",
+        ? t("track_page.step_rescue_desc_done")
+        : t("track_page.step_rescue_desc_pending"),
       state: isFound ? "done" : hasScore || hasMatch ? "active" : "pending",
       icon: Radio,
     },
     {
-      title: "Case resolution",
+      title: t("track_page.step_resolution_title"),
       description: isFound
-        ? "This person has been marked as found. Case closed."
-        : "This step completes once the person is verified as found.",
+        ? t("track_page.step_resolution_desc_done")
+        : t("track_page.step_resolution_desc_pending"),
       state: isFound ? "done" : "pending",
       icon: CheckCircle2,
     },
@@ -165,6 +166,7 @@ function InfoChip({ icon: Icon, label, value }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function TrackReportPage() {
+  const { t } = useTranslation();
   const { refId: routeRefId } = useParams();
   const navigate = useNavigate();
   const [input, setInput] = useState(routeRefId || "");
@@ -199,7 +201,7 @@ export default function TrackReportPage() {
     return unsubscribe;
   }, [lookupRef]);
 
-  const steps = useMemo(() => (report ? buildSteps(report) : []), [report]);
+  const steps = useMemo(() => (report ? buildSteps(report, t) : []), [report, t]);
   const status = STATUS_CONFIG[report?.status] || STATUS_CONFIG.missing;
 
   // Pull address from locationCoords first, then fall back to lastKnownLocation
@@ -242,18 +244,16 @@ export default function TrackReportPage() {
                 className="text-2xl font-bold text-[#0F172A]"
                 style={{ fontFamily: "var(--font-heading)" }}
               >
-                Track Your Report
+                {t('track_page.title')}
               </h1>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
-                Enter the reference number (e.g.{" "}
-                <span className="font-semibold text-[#1E3A8A]">FM-A3B9C1</span>) from your
-                submitted report.
+                {t('track_page.subtitle')}
               </p>
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="mt-6 space-y-3">
                 <label htmlFor="reference" className="block text-xs font-bold uppercase tracking-widest text-slate-400">
-                  Reference Number
+                  {t('track_page.ref_label')}
                 </label>
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
@@ -274,7 +274,7 @@ export default function TrackReportPage() {
                     ) : (
                       <ArrowRight className="h-4 w-4" />
                     )}
-                    Track
+                    {t('track_page.check_btn')}
                   </button>
                 </div>
               </form>
@@ -283,7 +283,7 @@ export default function TrackReportPage() {
               {lastChecked && (
                 <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
                   <RefreshCw className="h-3 w-3" />
-                  Live — last updated {lastChecked.toLocaleTimeString("en-IN")}
+                  {t('track_page.last_updated')} {lastChecked.toLocaleTimeString("en-IN")}
                 </p>
               )}
             </div>
@@ -293,7 +293,7 @@ export default function TrackReportPage() {
               <div className="flex items-start gap-3">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#1E3A8A]" />
                 <p className="text-xs leading-relaxed text-slate-500">
-                  For privacy, only operational progress and basic case details are shown. Rescue contact details are not displayed here.
+                  {t('track_page.privacy_note')}
                 </p>
               </div>
             </div>
@@ -315,7 +315,7 @@ export default function TrackReportPage() {
                     <Search className="h-7 w-7 text-slate-300" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-500">No report loaded yet</p>
+                    <p className="text-sm font-bold text-slate-500">{t('track_page.no_report_title')}</p>
                     <p className="mt-1 text-xs text-slate-400">
                       Enter a reference number on the left to view live case status.
                     </p>
@@ -333,7 +333,7 @@ export default function TrackReportPage() {
                   className="flex min-h-[440px] flex-col items-center justify-center gap-4 p-8"
                 >
                   <Loader2 className="h-9 w-9 animate-spin text-[#1E3A8A]" />
-                  <p className="text-sm font-semibold text-slate-500">Fetching live status…</p>
+                  <p className="text-sm font-semibold text-slate-500">{t('track_page.checking')}</p>
                 </motion.div>
               )}
 
@@ -350,7 +350,7 @@ export default function TrackReportPage() {
                     <AlertCircle className="h-6 w-6 text-red-500" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-700">Something went wrong</p>
+                    <p className="text-sm font-bold text-slate-700">Error</p>
                     <p className="mt-1 text-xs leading-relaxed text-slate-500">{error}</p>
                   </div>
                 </motion.div>
@@ -369,10 +369,9 @@ export default function TrackReportPage() {
                     <AlertCircle className="h-6 w-6 text-amber-500" />
                   </div>
                   <div>
-                    <p className="text-base font-bold text-[#0F172A]">No report found</p>
+                    <p className="text-base font-bold text-[#0F172A]">{t('track_page.no_report_title')}</p>
                     <p className="mt-1 max-w-xs text-sm leading-relaxed text-slate-500">
-                      Check the reference number and try again. Make sure to include the{" "}
-                      <span className="font-semibold text-[#1E3A8A]">FM-</span> prefix.
+                      {t('track_page.no_report_hint')}
                     </p>
                   </div>
                 </motion.div>
@@ -392,7 +391,7 @@ export default function TrackReportPage() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                          Reference
+                          {t('track_page.reference_label')}
                         </p>
                         <h2
                           className="mt-0.5 text-2xl font-bold tracking-tight text-[#0F172A]"
@@ -419,7 +418,7 @@ export default function TrackReportPage() {
                             status.pulse ? "animate-pulse" : ""
                           }`}
                         />
-                        {status.label}
+                        {t(`track_page.${status.labelKey}`)}
                       </div>
                     </div>
                   </div>
@@ -428,25 +427,25 @@ export default function TrackReportPage() {
                   <div className="grid grid-cols-2 gap-3 border-b border-slate-100 px-6 py-5 sm:grid-cols-2 sm:px-8">
                     <InfoChip
                       icon={Clock}
-                      label="Last updated"
+                      label={t("track_page.last_updated")}
                       value={formatDate(report.updatedAt || report.createdAt)}
                     />
                     <InfoChip
                       icon={Calendar}
-                      label="Reported on"
+                      label={t("track_page.reported_on")}
                       value={formatDate(report.createdAt)}
                     />
                     {report.lastKnownLocation?.dateLastSeen && (
                       <InfoChip
                         icon={Calendar}
-                        label="Last seen date"
+                        label={t("report_page.date_seen")}
                         value={report.lastKnownLocation.dateLastSeen}
                       />
                     )}
                     {(report.lastKnownLocation?.district || report.lastKnownLocation?.description) && (
                       <InfoChip
                         icon={MapPin}
-                        label="District"
+                        label={t("report_page.district")}
                         value={report.lastKnownLocation.district || report.lastKnownLocation.description}
                       />
                     )}
@@ -463,7 +462,7 @@ export default function TrackReportPage() {
                   {/* Progress timeline */}
                   <div className="px-6 py-6 sm:px-8">
                     <p className="mb-5 text-xs font-bold uppercase tracking-widest text-slate-400">
-                      Case timeline
+                      {t('track_page.case_timeline')}
                     </p>
                     <div>
                       {steps.map((step, i) => (
@@ -485,11 +484,11 @@ export default function TrackReportPage() {
                           <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-emerald-800">Person located</p>
+                          <p className="text-sm font-bold text-emerald-800">{t('track_page.person_located')}</p>
                           <p className="text-xs text-emerald-700">
                             {report.resolvedBy?.name
                               ? `Verified by ${report.resolvedBy.name}`
-                              : "This case has been successfully resolved."}
+                              : t('track_page.case_resolved_msg')}
                           </p>
                         </div>
                       </div>

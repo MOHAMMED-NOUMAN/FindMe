@@ -261,7 +261,18 @@
     "step_rescue_desc_pending": "రక్షణ దళాలు కేసును సమీక్షించవచ్చు మరియు వారి డ్యాష్‌బోర్డ్ నుండి నవీకరించవచ్చు.",
     "step_resolution_title": "కేసు పరిష్కారం",
     "step_resolution_desc_done": "ఈ వ్యక్తిని దొరికినట్లు గుర్తించారు.",
-    "step_resolution_desc_pending": "వ్యక్తి దొరికినట్లు ధృవీకరించినప్పుడు ఈ దశ పూర్తవుతుంది."
+    "step_resolution_desc_pending": "వ్యక్తి దొరికినట్లు ధృవీకరించినప్పుడు ఈ దశ పూర్తవుతుంది.",
+    "subtitle_prefix": "సూచన నంబర్ నమోదు చేయండి (ఉదా.",
+    "subtitle_suffix": "సమర్పించిన నివేదిక నుండి.",
+    "live_updated": "లైవ్ — చివరి అప్డేట్ {{time}}",
+    "no_report_loaded": "ఇంకా నివేదిక లోడ్ కాలేదు",
+    "something_wrong": "ఏదో తప్పు జరిగింది",
+    "last_seen_date": "చివరిగా చూసిన తేదీ",
+    "district": "జిల్లా",
+    "case_timeline": "కేసు టైమ్‌లైన్",
+    "person_located": "వ్యక్తి గుర్తించబడ్డాడు",
+    "verified_by": "{{name}} ద్వారా ధృవీకరించబడింది",
+    "case_resolved": "ఈ కేసు విజయవంతంగా పరిష్కరించబడింది."
   },
   "ai_match": {
     "engine_title": "AI మ్యాచ్ ఇంజిన్",
