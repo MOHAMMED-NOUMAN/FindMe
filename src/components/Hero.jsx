@@ -37,17 +37,21 @@ export default function Hero() {
         animate="show"
         className="relative z-10 mx-auto max-w-4xl text-center space-y-6"
       >
-        {/* Label */}
+
+        {/* Badge */}
         <motion.div variants={fadeUp} className="flex justify-center">
-          <span
-            className="inline-block rounded-full bg-[#1E3A8A]/5 border border-[#1E3A8A]/10 px-4 py-1.5 text-xs text-[#1E3A8A] tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-accent)" }}
-          >
-            {t("hero.platform_label")}
+          <span className="inline-flex items-center gap-2 rounded-full border border-[#1E3A8A]/15 bg-white/70 backdrop-blur-sm px-4 py-1.5 shadow-sm">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#FB7185] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#FB7185]" />
+            </span>
+            <span className="text-[11px] font-bold tracking-[0.18em] uppercase bg-gradient-to-r from-[#1E3A8A] to-[#2DD4BF] bg-clip-text text-transparent">
+              Disaster Response Platform
+            </span>
           </span>
         </motion.div>
 
-        {/* Title */}
+
         <motion.h1
           variants={fadeUp}
           className="text-6xl sm:text-7xl lg:text-8xl font-bold tracking-tight"

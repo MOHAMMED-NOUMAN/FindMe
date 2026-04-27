@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -8,7 +8,7 @@
   --color-text-primary: #0f172a;
   --color-text-secondary: #475569;
 
-  --font-heading: "Trocchi", serif;
+  --font-heading: "Plus Jakarta Sans", sans-serif;
   --font-body: "Inter", sans-serif;
   --font-accent: "Cinzel Decorative", cursive;
 }

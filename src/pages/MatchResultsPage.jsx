@@ -35,7 +35,7 @@ export default function MatchResultsPage() {
             ML Match Analysis
           </h1>
           <p className="text-[#475569] text-sm">
-            Live results from the DisasterIQ matching engine. This page updates automatically.
+            Live results from the FindMe matching engine. This page updates automatically.
           </p>
         </motion.div>
       </div>
