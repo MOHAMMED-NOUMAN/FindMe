@@ -19,6 +19,16 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
+    // ── rescuer_requests ID-proof uploads ─────────────────────────────────
+    // Registration happens BEFORE the user authenticates, so auth is not
+    // available here. We restrict by size (5 MB) and content type only.
+    match /rescuer_requests/{email}/{fileName} {
+      allow read: if false; // admin downloads via Firebase Console / SDK
+      allow write: if request.resource.size < 5 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType == 'application/pdf');
+    }
+
     // Default deny everything else
     match /{allPaths=**} {
       allow read, write: if false;

@@ -14,7 +14,10 @@ i18n
       loadPath: "/locales/{{lng}}/{{ns}}.json",
     },
     interpolation: {
-      escapeValue: false, // React already safeguards from XSS
+      escapeValue: false,
+    },
+    react: {
+      useSuspense: true,
     },
   });
 

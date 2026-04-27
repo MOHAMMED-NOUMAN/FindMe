@@ -7,6 +7,8 @@
 import {
   signInAnonymously,
   signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -18,6 +20,17 @@ const googleProvider = new GoogleAuthProvider()
 // ── Sign in with Google (rescue team / coordinator) ───────────────────────
 export async function signInWithGoogle() {
   const result = await signInWithPopup(auth, googleProvider)
+  return result.user
+}
+
+// ── Email/Password auth for approved rescue personnel ──────────────────────
+export async function registerWithEmailPassword(email, password) {
+  const result = await createUserWithEmailAndPassword(auth, email, password)
+  return result.user
+}
+
+export async function signInWithEmailPassword(email, password) {
+  const result = await signInWithEmailAndPassword(auth, email, password)
   return result.user
 }
 

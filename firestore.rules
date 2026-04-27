@@ -77,6 +77,24 @@ service cloud.firestore {
       allow delete: if isCoordinator();
     }
 
+    match /rescuerRequests/{docId} {
+      // Registration is open and auto-approved — no admin gate.
+      // Note: orgName and phone are optional (may be null), so we only require the
+      // guaranteed non-null fields in hasAll() to avoid false permission denials.
+      allow create: if request.resource.data.keys().hasAll([
+          'name', 'orgType', 'email', 'status'
+        ])
+        && request.resource.data.status == 'approved';
+
+      // Any signed-in user can read their own record; coordinators/admin see all.
+      allow read: if (isSignedIn() && request.auth.token.email == resource.data.email)
+        || isCoordinator()
+        || isAdmin();
+
+      // Only coordinators/admin can update/delete.
+      allow update, delete: if isCoordinator() || isAdmin();
+    }
+
     // ── tasks ────────────────────────────────────────────────────────────
     // Rescue & coordinator can read+write.
     // Any signed-in user (incl. anonymous) can CREATE tasks — the client-side
