@@ -52,3 +52,4 @@ export async function unsubscribeFromPersonAlerts(missingPersonId, phone) {
   const deletes = snap.docs.map((d) => deleteDoc(doc(db, COL, d.id)))
   await Promise.all(deletes)
 }
+

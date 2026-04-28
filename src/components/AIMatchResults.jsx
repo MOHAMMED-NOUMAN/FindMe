@@ -43,6 +43,8 @@ function toPersonRecord(id, data) {
     location_desc: locDesc,
     physical_tags,
     photo_url: data.photoUrl || data.photo_url || null,
+    ai_match_confirmed: data.ai_match_confirmed || false,
+    ai_match_dismissed: data.ai_match_dismissed || false,
   }
 }
 
@@ -200,7 +202,7 @@ function FaceVerifyButton({ url1, url2 }) {
 }
 
 // ── Comparison modal ───────────────────────────────────────────
-function ComparisonModal({ match, onClose, onConfirm }) {
+function ComparisonModal({ match, onClose, onConfirm, onDismiss }) {
   const { foundPerson, missingPerson, score, breakdown } = match
   const pct = Math.round(score * 100)
   const [showBreakdown, setShowBreakdown] = useState(false)
@@ -356,6 +358,13 @@ function ComparisonModal({ match, onClose, onConfirm }) {
 
         {/* Footer */}
         <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+          <button 
+            onClick={onDismiss} 
+            disabled={isConfirming} 
+            className="px-5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors mr-auto disabled:opacity-50"
+          >
+            Dismiss Match
+          </button>
           <button onClick={onClose} disabled={isConfirming} className="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 disabled:opacity-50">
             Close
           </button>
@@ -484,8 +493,10 @@ export default function AIMatchResults() {
         return
       }
 
-      const missingList = missingSnap.docs.map(d => toPersonRecord(d.id, d.data()))
-      const foundList   = foundSnap.docs.map(d => toPersonRecord(d.id, d.data()))
+      const missingList = missingSnap.docs
+        .map(d => toPersonRecord(d.id, d.data()))
+        .filter(p => !p.ai_match_confirmed && !p.ai_match_dismissed)
+      const foundList = foundSnap.docs.map(d => toPersonRecord(d.id, d.data()))
 
       const allMatches = []
 
@@ -494,7 +505,7 @@ export default function AIMatchResults() {
           const response = await callMLMatchingAPI(foundPerson, missingList)
           if (response?.matches) {
             for (const match of response.matches) {
-              if (match.composite_score >= 0.20) {
+              if (match.composite_score >= 0.70) {
                 const mPerson = missingList.find(m => m.id === match.missing_person_id)
                 if (mPerson) {
                   allMatches.push({
@@ -546,6 +557,15 @@ export default function AIMatchResults() {
     })
     
     // Remove it from the local AI match list so the UI updates
+    setMatches(prev => prev.filter(m => m.missingPerson.id !== missingId))
+  }
+
+  const handleDismissMatch = async (missingId) => {
+    // Mark as dismissed so it doesn't show up in AI matching again
+    await updateDoc(doc(db, "missing_persons", missingId), {
+      ai_match_dismissed: true,
+      updatedAt: serverTimestamp()
+    })
     setMatches(prev => prev.filter(m => m.missingPerson.id !== missingId))
   }
 
@@ -619,6 +639,10 @@ export default function AIMatchResults() {
             match={selectedMatch} 
             onClose={() => setSelectedMatch(null)} 
             onConfirm={handleConfirmMatch}
+            onDismiss={() => {
+              handleDismissMatch(selectedMatch.missingPerson.id)
+              setSelectedMatch(null)
+            }}
           />
         )}
       </AnimatePresence>

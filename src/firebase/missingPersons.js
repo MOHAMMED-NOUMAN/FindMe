@@ -136,7 +136,7 @@ async function runMatchingEngine(docId, reportData) {
     try {
       await updateDoc(doc(db, COL, docId), {
         composite_score: topScore,
-        found_person_id: topScore >= 0.4 ? topMatchId : null,
+        // No auto-assignment of found_person_id; requires manual confirmation
         updatedAt: serverTimestamp(),
       });
     } catch (updateErr) {
@@ -366,7 +366,6 @@ export async function searchMissingPersons(searchTerm = "", filters = {}) {
   const snap = await getDocs(
     query(
       collection(db, COL),
-      where("status", "==", "missing"),
       orderBy("createdAt", "desc"),
       limit(300),
     ),
@@ -544,6 +543,22 @@ export async function resolveMissingPersonAsFound({
     },
     actor: resolvedBy,
     createdAt: now,
+  });
+
+  // ── Push to Rescue Exchange as Rescued ──────────────────────────
+  batch.set(doc(collection(db, "rescue_exchange")), {
+    personName: missing.name || "Unknown person",
+    caseRef: missing.refId || null,
+    missingPersonId,
+    status: "rescued",
+    priority: missing.priority || "HIGH",
+    sourceType: "field",
+    district: sourceDistrict,
+    location: sourceLocation,
+    note: notes?.trim() || `Automatically added: Resolved as found by ${resolvedBy.name}.`,
+    actor: resolvedBy,
+    createdAt: now,
+    updatedAt: now,
   });
 
   await batch.commit();

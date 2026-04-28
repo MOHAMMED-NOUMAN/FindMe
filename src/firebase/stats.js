@@ -33,7 +33,7 @@ export function subscribeGlobalStats(callback) {
 
 // ── Fallback: compute stats on demand ────────────────────────────────────
 async function computeStats() {
-  const [missingSnap, foundSnap, rescuesSnap] = await Promise.all([
+  const [missingSnap, foundSnap, rescuesSnap, campsSnap] = await Promise.all([
     getCountFromServer(
       query(collection(db, 'missing_persons'), where('status', '==', 'missing'))
     ),
@@ -43,13 +43,16 @@ async function computeStats() {
     getCountFromServer(
       query(collection(db, 'tasks'), where('status', 'in', ['enroute', 'onscene']))
     ),
+    getCountFromServer(
+      query(collection(db, 'camps'), where('status', '==', 'active'))
+    ),
   ])
 
   return {
     missing: missingSnap.data().count,
     found: foundSnap.data().count,
-    campsOpen: 0,         // maintained by separate camps collection
-    teamsActive: 0,       // maintained by teams collection
+    campsOpen: campsSnap.data().count,
+    teamsActive: 0,
     activeRescues: rescuesSnap.data().count,
     avgResolutionHours: null,
   }

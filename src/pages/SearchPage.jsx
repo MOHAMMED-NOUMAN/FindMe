@@ -70,6 +70,11 @@ function MatchCard({ person, index }) {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
+          {person.status === 'found' && (
+            <div className="px-2.5 py-1 rounded-md bg-emerald-100 border border-emerald-200 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+              Resolved
+            </div>
+          )}
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${cfg.bg} ${cfg.border}`}>
             <div className={`w-2 h-2 rounded-full ${cfg.dot}`} />
             <span className={`text-xs font-bold ${cfg.color}`}>{person.confidence ?? '?'}%</span>

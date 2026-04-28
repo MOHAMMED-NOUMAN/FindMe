@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MapPin, Clock, User, CheckCircle2 } from "lucide-react";
+import { MapPin, Clock, User, CheckCircle2, X } from "lucide-react";
 
 const priorityConfig = {
   CRITICAL: {
@@ -29,6 +29,7 @@ export default function TaskCard({
   task,
   index = 0,
   onResolve,
+  onUnconfirm,
   isResolving = false,
 }) {
   const cfg = priorityConfig[task.priority] || priorityConfig.MEDIUM;
@@ -96,14 +97,25 @@ export default function TaskCard({
         </span>
       </div>
 
-      <button
-        onClick={() => onResolve?.(task)}
-        disabled={isResolving}
-        className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60"
-      >
-        <CheckCircle2 className="w-3.5 h-3.5" />
-        {isResolving ? "Resolving..." : "Resolve as Found"}
-      </button>
+      <div className="flex gap-2 mt-3">
+        {task.status === "match" && (
+          <button
+            onClick={() => onUnconfirm?.(task)}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-[11px] font-semibold text-red-700 hover:bg-red-100 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Unconfirm
+          </button>
+        )}
+        <button
+          onClick={() => onResolve?.(task)}
+          disabled={isResolving}
+          className={`${task.status === "match" ? "flex-1" : "w-full"} inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-2.5 py-2 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          {isResolving ? "Resolving..." : "Resolve as Found"}
+        </button>
+      </div>
     </motion.div>
   );
 }

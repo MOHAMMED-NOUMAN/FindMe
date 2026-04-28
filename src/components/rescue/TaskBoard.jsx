@@ -8,6 +8,9 @@ import {
   where,
   onSnapshot,
   orderBy,
+  doc,
+  updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../../firebase/config";
 import { resolveMissingPersonAsFound } from "../../firebase/missingPersons";
@@ -52,8 +55,8 @@ export default function TaskBoard({ user }) {
   };
 
   missingPersons.forEach((mp) => {
-    // Determine column based on composite_score or found_person_id
-    const isMatch = mp.composite_score >= 0.4 || mp.found_person_id != null;
+    // Determine column based on explicit user confirmation or manual link
+    const isMatch = mp.ai_match_confirmed === true || mp.found_person_id != null;
     const bucket = isMatch ? grouped.match : grouped.missing;
 
     // Synthesize a task object so TaskCard can render it without changes
@@ -119,6 +122,23 @@ export default function TaskBoard({ user }) {
       setResolveTarget(null);
     } catch (err) {
       setResolveError(err?.message || "Failed to resolve case. Please retry.");
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  const handleUnconfirm = async (task) => {
+    try {
+      setResolvingId(task.id);
+      await updateDoc(doc(db, "missing_persons", task.id), {
+        found_person_id: null,
+        composite_score: 0,
+        ai_match_confirmed: false,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error("[TaskBoard] Unconfirm error:", err);
+      alert("Failed to unconfirm match. Please try again.");
     } finally {
       setResolvingId(null);
     }
@@ -197,6 +217,7 @@ export default function TaskBoard({ user }) {
                       task={task}
                       index={i}
                       onResolve={openResolve}
+                      onUnconfirm={handleUnconfirm}
                       isResolving={resolvingId === task.id}
                     />
                   </div>

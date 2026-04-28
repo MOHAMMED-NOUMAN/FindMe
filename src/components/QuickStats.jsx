@@ -3,10 +3,13 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { Users, UserCheck, Tent, Headphones, Radio } from "lucide-react";
 import {
-  subscribeGlobalStats,
-  subscribeCampsCount,
-  subscribeTeamsCount,
-} from "../firebase/stats";
+  collection,
+  query,
+  where,
+  getCountFromServer,
+} from "firebase/firestore";
+import { db } from "../firebase/config";
+import { subscribeCampsCount } from "../firebase/stats";
 
 export default function QuickStats() {
   const { t } = useTranslation();
@@ -14,31 +17,40 @@ export default function QuickStats() {
     missing: "—",
     found: "—",
     camps: "—",
-    teams: "—",
   });
   const [lastUpdated, setLastUpdated] = useState("just_now");
 
   useEffect(() => {
-    const unsubStats = subscribeGlobalStats((data) => {
-      setCounts((prev) => ({
-        ...prev,
-        missing: data.missing?.toLocaleString() ?? "—",
-        found: data.found?.toLocaleString() ?? "—",
-      }));
-    });
+    const fetchCounts = async () => {
+      try {
+        const [missingSnap, foundSnap] = await Promise.all([
+          getCountFromServer(query(collection(db, "missing_persons"), where("status", "==", "missing"))),
+          getCountFromServer(query(collection(db, "missing_persons"), where("status", "==", "found")))
+        ]);
+        
+        setCounts(prev => ({
+          ...prev,
+          missing: missingSnap.data().count.toLocaleString(),
+          found: foundSnap.data().count.toLocaleString(),
+        }));
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+
+    fetchCounts();
+    
     const unsubCamps = subscribeCampsCount((n) =>
       setCounts((prev) => ({ ...prev, camps: n.toLocaleString() })),
     );
-    const unsubTeams = subscribeTeamsCount((n) =>
-      setCounts((prev) => ({ ...prev, teams: n.toLocaleString() })),
-    );
+
     const timer = setInterval(() => {
+      fetchCounts(); // Refresh counts periodically
       setLastUpdated("less_than_minute");
-    }, 30000);
+    }, 60000);
+
     return () => {
-      unsubStats();
       unsubCamps();
-      unsubTeams();
       clearInterval(timer);
     };
   }, []);
@@ -47,7 +59,6 @@ export default function QuickStats() {
     { id: "missing", labelKey: "quick_stats.missing", value: counts.missing, icon: Users, color: "text-[#FB7185]", bg: "bg-[#FB7185]/8" },
     { id: "found",   labelKey: "quick_stats.found",   value: counts.found,   icon: UserCheck, color: "text-emerald-600", bg: "bg-emerald-50" },
     { id: "camps",   labelKey: "quick_stats.camps",   value: counts.camps,   icon: Tent, color: "text-[#2DD4BF]", bg: "bg-[#2DD4BF]/8" },
-    { id: "teams",   labelKey: "quick_stats.teams",   value: counts.teams,   icon: Headphones, color: "text-[#1E3A8A]", bg: "bg-[#1E3A8A]/8" },
   ];
 
   return (
@@ -71,7 +82,7 @@ export default function QuickStats() {
         </p>
       </div>
 
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-gray-100 overflow-hidden">
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm grid grid-cols-1 md:grid-cols-3 divide-x divide-y md:divide-y-0 divide-gray-100 overflow-hidden">
         {stats.map(({ id, labelKey, value, icon: Icon, color, bg }) => (
           <div key={id} className="flex items-center gap-4 px-6 py-5">
             <div className={`p-2.5 rounded-xl ${bg} shrink-0`}>
