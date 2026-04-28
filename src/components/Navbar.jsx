@@ -141,7 +141,7 @@ export default function Navbar() {
           <motion.div
             className="flex items-center gap-14 whitespace-nowrap text-xs sm:text-sm text-red-950 font-semibold absolute"
             animate={{ x: ["0%", "-50%"] }}
-            transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
           >
             {[...messages, ...messages].map((msg, i) => (
               <span key={i} className="flex items-center gap-2.5">
