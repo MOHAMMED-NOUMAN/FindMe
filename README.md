@@ -49,186 +49,115 @@ FindMe is not only a report form. It is a complete response pipeline:
 
 ### Public Missing Person Reporting
 
-* Four step reporting flow for personal details, last seen information, photo and physical description, and reporter contact.
-* Name based duplicate warning before submission, helping avoid repeated reports for the same person.
-* Interactive map powered location picker for last seen location.
-* India state and district selection with support for custom districts.
-* Date and time fields for the last known sighting.
-* Photo upload to Firebase Storage.
-* Reporter phone and alternate phone capture.
-* Consent checkbox before submission.
-* Human readable case reference generation.
-* Confirmation screen with direct tracking link.
-* Client side submission rate limit to reduce spam.
-* Anonymous Firebase Auth support so civilians can report without creating an account.
+* A guided four step flow captures identity, age, gender, relationship, last seen date and time, district, map picked location, photo, physical description, reporter phone, alternate phone, and consent.
+* Duplicate warnings flag similar active reports before submission, while session rate limiting helps reduce spam during high traffic events.
+* Firebase Storage handles report photos, anonymous Firebase Auth allows civilians to submit without an account, and every report receives a human readable `FM` reference ID.
+* The confirmation screen gives families an immediate tracking link so the case can be followed without exposing internal database IDs.
 
 ### Found Person Reporting
 
-* Public found person submission flow.
-* Optional name, age, gender, physical tags, location description, and photo.
-* Photo upload for found person records.
-* Location geocoding through OpenStreetMap Nominatim.
-* Found person records stored separately for ML comparison against missing reports.
-* Submit another flow after a successful report.
+* Citizens can report a found person with name, age, gender, physical tags, location details, and an optional photo.
+* Uploaded photos are stored in Firebase Storage and found person records are saved separately for clean comparison against missing reports.
+* Location text is geocoded through OpenStreetMap Nominatim, giving the ML and rescue layers better spatial context.
+* After submission, the flow supports quickly submitting another found report when multiple people are discovered in the same area.
 
 ### Safe Check-In
 
-* "I am safe" form for people who are safe or need help.
-* Status options for safe, safe but needs help, at relief camp, and medical help.
-* Phone number capture for verification.
-* Relative contact phone and message fields.
-* Optional missing report reference linking.
-* Location text input plus browser GPS attachment.
-* Rescue message field for urgent context.
-* Safe reference generation using `SAFE` IDs.
-* Automatic task creation for rescuers when a safe check-in needs verification.
+* The "I am safe" flow lets people report safe, safe but needing help, at relief camp, or medical help status.
+* It captures phone, district, location, browser GPS, optional missing report reference, relative phone, relative message, and rescue context.
+* Each submission receives a `SAFE` reference ID and is stored as a live safe report.
+* Safe check-ins automatically create rescue tasks so operators can verify, contact families, and close active missing cases.
 
 ### Public Search
 
-* Search active missing person reports.
-* Filter by district and gender.
-* Expandable missing person result cards.
-* Photo, name, age, gender, district, last known location, description, and reference display.
-* Match confidence styling for high, possible, and low signal records.
-* "Notify me" subscription using phone number storage in Firestore.
-* Location reveal panel for report context.
-* Contact or tracking action states depending on confidence level.
+* The public can search active missing reports and filter by district and gender.
+* Expandable result cards show photo, name, age, gender, reference ID, district, last known location, and description.
+* Confidence states make high, possible, and low signal records easier to scan.
+* The "Notify me" action stores phone based alert subscriptions in Firestore, while location and contact actions help citizens respond responsibly.
 
 ### Live Case Tracking
 
-* Track a report by reference number.
-* Direct URL support through `/track/:refId`.
-* Reference normalization, so users can enter codes with or without the `FM` prefix.
-* Real time Firestore subscription to case updates.
-* Case status display for active, found, and closed states.
-* Case timeline showing report received, AI review, rescue response, and resolution.
-* Last checked time indicator.
-* Reported date, updated date, last seen date, district, and location details.
-* Found banner with verifier information when a case is resolved.
-* Privacy note for families viewing case progress.
+* Families can track any case by reference number, including direct links through `/track/:refId`.
+* Reference input is normalized, so users can enter codes with or without the `FM` prefix.
+* Real time Firestore updates show active, found, and closed states with last checked time, reported date, updated date, last seen date, district, and location.
+* A clear timeline shows report received, AI review, rescue response, and resolution, with verifier details once a person is found.
 
 ### AI Match Analysis
 
-* Dedicated ML match results screen.
-* ML health indicator that checks the matching service.
-* Refreshable AI analysis.
-* Composite score display for potential matches.
-* Score breakdown for name, age, location, and physical tags.
-* Estimated distance support when returned by the ML service.
-* Side by side comparison modal for found and missing person records.
-* Face verification through the ML face matching endpoint.
-* Match confirmation flow that writes the chosen found person ID and score back to Firestore.
-* Confirmed matches move into rescue review instead of staying as loose suggestions.
+* The ML match screen checks service health, runs refreshable analysis, and ranks potential matches with composite confidence.
+* Score breakdowns show name, age, location, physical tag, and estimated distance signals when returned by the backend.
+* A comparison modal places found and missing records side by side, including photos, locations, tags, and identity details.
+* Face verification calls the ML face endpoint, and confirmed matches write the found person ID and score back to Firestore for rescue review.
 
 ### Rescue Operator Access
 
-* Rescue dashboard protected by authentication.
-* Rescuer registration form for NGO, Police, NDRF, and SDRF personnel.
-* Official email and phone capture.
-* Optional ID proof upload.
-* Google Sign-In for approved rescuers.
-* Email and password account creation and sign-in.
-* Registered email verification before dashboard access.
-* Operator identity bar with sign out.
+* The rescue dashboard is protected behind operator access, with registration for NGO, Police, NDRF, and SDRF personnel.
+* Registration captures name, organization type, organization name, official email, phone, and optional ID proof.
+* Approved rescuers can use Google Sign-In or email and password authentication.
+* Dashboard entry verifies the signed in email against the registered rescuer record and shows operator identity with sign out.
 
 ### Live Rescue Dashboard
 
-* Split screen command view with operations panel and live map.
-* Mobile mode switch between search board and command map.
-* Search Board tab for active missing cases.
-* Safe tab for safe check-ins.
-* Exchange tab for rescuer to rescuer field updates.
-* Comms tab for live operational messages.
-* AI tab for match analysis inside the rescue workspace.
+* The command workspace uses a split screen layout with an operations panel beside a live map.
+* Mobile rescuers can switch between the search board and command map without losing context.
+* Tabs organize the core workflows: Search Board, Safe Reports, Field Exchange, Comms, and AI analysis.
+* Every panel listens to live Firebase data so new reports, updates, and matches appear without manual refresh.
 
 ### Emergency Search Board
 
-* Live Firestore subscription to active missing cases.
-* Two operational columns: Missing and Confirmed Match.
-* Cases with strong ML signals move into the confirmed match column.
-* Task cards synthesized from missing person reports.
-* Critical priority styling for matched cases.
-* Resolve as found modal.
-* Resolution captures found location, district, verifier, contact phone, notes, and resolver identity.
-* Case resolution writes to missing person and found person collections.
+* Active missing cases stream from Firestore into two operational columns: Missing and Confirmed Match.
+* Strong ML signals move cases into the confirmed match column with critical priority styling.
+* Task cards are generated from missing person reports, giving rescuers the name, photo, location, district, description, and case age.
+* The resolve as found flow captures location, district, verifier, contact phone, notes, and resolver identity, then writes the resolution into missing and found person records.
 
 ### Safe Reports Review
 
-* Live list of safe reports.
-* Dashboard counters for total, new, linked, and medical reports.
-* Search by name, phone, reference, district, or location.
-* Status chips for safe, needs help, relief camp, and medical help.
-* Display of relative contact and relative message.
-* GPS coordinate display when attached.
-* Find matches action that checks safe reports against active missing cases.
-* Mark reviewed action.
-* Confirm safe action that links a safe report to a missing person.
-* Linked safe reports create found person records and mark missing cases as found.
+* Operators see a live safe report queue with counters for total, new, linked, and medical cases.
+* Search supports name, phone, reference, district, and location, while status chips highlight safe, needs help, relief camp, and medical help reports.
+* Each card can show relative contact, relative message, GPS coordinates, safety message, and missing reference details.
+* Rescuers can find matching missing cases, mark reports reviewed, or confirm safe links that create found records and mark missing cases as found.
 
 ### Shared Field Exchange
 
-* Rescuers can share field updates with other teams.
-* Updates can be linked to an existing missing person case or created manually.
-* Status types include needs help, sighting, verified, rescued, and unresolved.
-* Priority levels include critical, high, medium, and low.
-* Source types include field, web, IVR, and NGO.
-* District, displacement zone, exact location, team name, reference ID, and notes are captured.
-* Search and filter by text, status, and priority.
-* Stats for updates, critical items, rescued items, and active teams.
-* Other operators can add shared requests to the search board as searchable missing person cases.
+* Rescuers can share field updates linked to a missing person case or created manually for new sightings.
+* Updates include status, priority, source type, district, displacement zone, exact location, team name, reference ID, and notes.
+* Filters cover search text, status, and priority, with stats for total updates, critical items, rescued items, and active teams.
+* Other operators can convert a shared request into a searchable missing person case on the search board.
 
 ### Field Information Exchange
 
-* Live rescue communication room.
-* Message categories for roadblock, danger, medical, shelter, supply, rescue needed, and general updates.
-* Priority tagging for operational urgency.
-* District, zone, and landmark fields.
-* Search by message, road, camp, district, zone, or location.
-* Filter by category, priority, and status.
-* Acknowledge button for operators who have seen an update.
-* Resolve button for completed field updates.
-* Separate styling for the current operator's messages and critical incoming messages.
-* Mobile friendly composer and filters.
+* The live rescue communication room supports roadblock, danger, medical, shelter, supply, rescue needed, and general message categories.
+* Messages include priority, district, zone, landmark or route, and full field notes.
+* Operators can search messages, roads, camps, districts, zones, and locations, then filter by category, priority, and status.
+* Acknowledge and resolve actions keep the room operational, with mobile friendly filters and composer controls.
 
 ### Command Map
 
-* Leaflet powered live map.
-* Missing person markers and found person markers.
-* Firestore subscriptions for live map updates.
-* State and district filtering.
-* India wide default map view with state zoom behavior.
-* Marker popups showing name, age, location, and district.
-* Live legend with visible missing and found counts.
+* The Leaflet command map streams missing and found person markers from Firestore.
+* State and district filters let operators narrow the field view quickly.
+* Marker popups show report type, name, age, location, and district.
+* The map defaults to an India wide view, zooms by state, and includes a live legend with visible missing and found counts.
 
 ### Home And Public Awareness
 
-* Public hero page with direct actions for Search, Report Missing, Report Found, and Rescue Teams.
-* Live alert ticker in the navbar with urgent missing reports and platform counters.
-* Quick statistics for missing persons, found persons, active camps, and active teams.
-* Emergency alert bar with disaster event notice.
-* Nearest relief camp finder using browser location.
-* Relief camp lookup first checks Firestore verified camps, then falls back to OpenStreetMap Overpass data.
-* Google Maps and OpenStreetMap links for discovered relief camps.
-* Public bulletin board showing recent missing notices.
-* Bulletin filters for all, children, and adults.
-* Report found action from bulletin cards.
+* The public homepage gives immediate actions for Search, Report Missing, Report Found, Safe Check-In, and Rescue Teams.
+* A live navbar ticker shows urgent reports, active missing reports, missing children, safe check-ins, and emergency helpline information.
+* Quick stats display missing, found, active camps, and active teams, while the bulletin board highlights recent missing notices with all, children, and adult filters.
+* The relief camp finder uses browser location, checks verified Firestore camps first, falls back to OpenStreetMap Overpass, and opens results in Google Maps or OpenStreetMap.
 
 ### Localization
 
-* i18next based translation system.
-* English, Hindi, and Telugu translation files.
-* Browser language detection support.
-* Language selector in the navbar.
-* Localized public pages, rescue labels, alerts, and form text.
+* The app uses i18next and react-i18next for multilingual UI.
+* English, Hindi, and Telugu translation files cover public flows, alerts, form labels, rescue screens, and navigation.
+* Browser language detection improves first load comfort for local users.
+* A navbar language selector lets users switch language at any time.
 
 ### Security And Data Handling
 
-* Firebase Authentication for anonymous civilian submissions and authenticated rescue access.
-* Firestore rules included for public reads, report creation, role aware rescue operations, and protected updates.
-* Firebase Storage rules included for uploaded images and rescuer documents.
-* Case references avoid exposing Firestore document IDs as the primary user facing handle.
-* Public tracking uses reference based lookup.
-* Sensitive rescue actions require signed in operators.
+* Firebase Authentication separates anonymous civilian submissions from signed in rescue operations.
+* Firestore and Storage rules protect report creation, public reads, uploaded images, rescuer documents, and sensitive updates.
+* Public tracking uses reference based lookup so users rely on case IDs like `FM-A3B9C1` instead of internal document IDs.
+* Rescue actions such as linking, reviewing, resolving, exchange updates, and communications require authenticated operators.
 
 ## ML Model Repository
 
