@@ -491,6 +491,7 @@ export default function AIMatchResults() {
         return
       }
 
+      const missingList = missingSnap.docs
         .map(d => toPersonRecord(d.id, d.data()))
         .filter(p => !p.ai_match_confirmed)
       const foundList = foundSnap.docs.map(d => toPersonRecord(d.id, d.data()))
