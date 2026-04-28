@@ -5,7 +5,7 @@ import {
   RefreshCw, Camera, CheckCircle2, AlertCircle, Scan,
   ChevronDown, ChevronUp, Activity
 } from 'lucide-react'
-import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { callMLMatchingAPI, callMLFaceMatchAPI, checkMLHealth } from '../services/mlService'
 
@@ -44,7 +44,7 @@ function toPersonRecord(id, data) {
     physical_tags,
     photo_url: data.photoUrl || data.photo_url || null,
     ai_match_confirmed: data.ai_match_confirmed || false,
-    ai_match_dismissed: data.ai_match_dismissed || false,
+    dismissed_found_ids: data.dismissed_found_ids || [],
   }
 }
 
@@ -180,9 +180,8 @@ function FaceVerifyButton({ url1, url2 }) {
   // result state
   const { is_match, similarity_percentage, face_distance } = result
   return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm font-semibold ${
-      is_match ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'
-    }`}>
+    <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl border text-sm font-semibold ${is_match ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'
+      }`}>
       {is_match
         ? <CheckCircle2 className="w-4 h-4 shrink-0" />
         : <AlertCircle className="w-4 h-4 shrink-0" />
@@ -322,10 +321,10 @@ function ComparisonModal({ match, onClose, onConfirm, onDismiss }) {
                 className="overflow-hidden"
               >
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pb-1">
-                  <ScoreBar label="Name (40%)"     value={breakdown.name_score}     color="bg-[#1E3A8A]" />
-                  <ScoreBar label="Age (20%)"      value={breakdown.age_score}      color="bg-violet-500" />
+                  <ScoreBar label="Name (40%)" value={breakdown.name_score} color="bg-[#1E3A8A]" />
+                  <ScoreBar label="Age (20%)" value={breakdown.age_score} color="bg-violet-500" />
                   <ScoreBar label="Location (25%)" value={breakdown.location_score} color="bg-cyan-500" />
-                  <ScoreBar label="Tags (15%)"     value={breakdown.tag_score}      color="bg-orange-400" />
+                  <ScoreBar label="Tags (15%)" value={breakdown.tag_score} color="bg-orange-400" />
                 </div>
                 {breakdown.estimated_distance_km != null && (
                   <p className="text-[11px] text-slate-400 mt-2">
@@ -358,9 +357,9 @@ function ComparisonModal({ match, onClose, onConfirm, onDismiss }) {
 
         {/* Footer */}
         <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-          <button 
-            onClick={onDismiss} 
-            disabled={isConfirming} 
+          <button
+            onClick={onDismiss}
+            disabled={isConfirming}
             className="px-5 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors mr-auto disabled:opacity-50"
           >
             Dismiss Match
@@ -455,13 +454,12 @@ function MLHealthBadge() {
   }, [])
 
   return (
-    <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${
-      status === 'ok'
-        ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-        : status === 'error'
-          ? 'bg-red-50 border-red-200 text-red-600'
-          : 'bg-slate-50 border-slate-200 text-slate-500'
-    }`}>
+    <div className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border ${status === 'ok'
+      ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+      : status === 'error'
+        ? 'bg-red-50 border-red-200 text-red-600'
+        : 'bg-slate-50 border-slate-200 text-slate-500'
+      }`}>
       <Activity className="w-3 h-3" />
       {status === 'ok' ? 'ML Engine Online' : status === 'error' ? 'ML Engine Offline' : 'Checking…'}
     </div>
@@ -481,10 +479,10 @@ export default function AIMatchResults() {
     setError(null)
     try {
       const missingSnap = await getDocs(
-        query(collection(db, 'missing_persons'), orderBy('createdAt', 'desc'), limit(50))
+        query(collection(db, 'missing_persons'), orderBy('createdAt', 'desc'), limit(500))
       )
       const foundSnap = await getDocs(
-        query(collection(db, 'found_persons'), orderBy('createdAt', 'desc'), limit(50))
+        query(collection(db, 'found_persons'), orderBy('createdAt', 'desc'), limit(500))
       )
 
       if (missingSnap.empty || foundSnap.empty) {
@@ -493,9 +491,8 @@ export default function AIMatchResults() {
         return
       }
 
-      const missingList = missingSnap.docs
         .map(d => toPersonRecord(d.id, d.data()))
-        .filter(p => !p.ai_match_confirmed && !p.ai_match_dismissed)
+        .filter(p => !p.ai_match_confirmed)
       const foundList = foundSnap.docs.map(d => toPersonRecord(d.id, d.data()))
 
       const allMatches = []
@@ -505,9 +502,10 @@ export default function AIMatchResults() {
           const response = await callMLMatchingAPI(foundPerson, missingList)
           if (response?.matches) {
             for (const match of response.matches) {
-              if (match.composite_score >= 0.70) {
+              if (match.composite_score >= 0.60) {
                 const mPerson = missingList.find(m => m.id === match.missing_person_id)
-                if (mPerson) {
+                // Filter out if this specific pair was dismissed
+                if (mPerson && !mPerson.dismissed_found_ids.includes(foundPerson.id)) {
                   allMatches.push({
                     foundPerson,
                     missingPerson: mPerson,
@@ -541,7 +539,7 @@ export default function AIMatchResults() {
 
   useEffect(() => {
     let mounted = true
-    runAnalysis().then(() => { if (!mounted) return }).catch(() => {})
+    runAnalysis().then(() => { if (!mounted) return }).catch(() => { })
     return () => { mounted = false }
   }, [runCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -555,18 +553,18 @@ export default function AIMatchResults() {
       ai_match_confirmed: true,
       updatedAt: serverTimestamp()
     })
-    
+
     // Remove it from the local AI match list so the UI updates
     setMatches(prev => prev.filter(m => m.missingPerson.id !== missingId))
   }
 
-  const handleDismissMatch = async (missingId) => {
-    // Mark as dismissed so it doesn't show up in AI matching again
+  const handleDismissMatch = async (missingId, foundId) => {
+    // Mark this specific pair as dismissed
     await updateDoc(doc(db, "missing_persons", missingId), {
-      ai_match_dismissed: true,
+      dismissed_found_ids: arrayUnion(foundId),
       updatedAt: serverTimestamp()
     })
-    setMatches(prev => prev.filter(m => m.missingPerson.id !== missingId))
+    setMatches(prev => prev.filter(m => !(m.missingPerson.id === missingId && m.foundPerson.id === foundId)))
   }
 
   return (
@@ -635,12 +633,12 @@ export default function AIMatchResults() {
       {/* Comparison modal */}
       <AnimatePresence>
         {selectedMatch && (
-          <ComparisonModal 
-            match={selectedMatch} 
-            onClose={() => setSelectedMatch(null)} 
+          <ComparisonModal
+            match={selectedMatch}
+            onClose={() => setSelectedMatch(null)}
             onConfirm={handleConfirmMatch}
             onDismiss={() => {
-              handleDismissMatch(selectedMatch.missingPerson.id)
+              handleDismissMatch(selectedMatch.missingPerson.id, selectedMatch.foundPerson.id)
               setSelectedMatch(null)
             }}
           />
