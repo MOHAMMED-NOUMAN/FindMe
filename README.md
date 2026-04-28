@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://findme-e570e.web.app/">Click here to explore the live web app</a>
+</p>
+
+<p align="center">
   <img alt="React" src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=061A23" />
   <img alt="Vite" src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" />
   <img alt="Firebase" src="https://img.shields.io/badge/Firebase-12-FFCA28?logo=firebase&logoColor=111827" />
