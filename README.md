@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/icons/readme_logo.png" alt="FindMe logo" width="180" />
+  <img src="public/icons/readme_logo.png" alt="FindMe logo" width="640" />
 </p>
 
 <h1 align="center">FindMe</h1>
