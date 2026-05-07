@@ -91,3 +91,32 @@ export async function checkMLHealth() {
   if (!response.ok) throw new Error(`[ML API] Health check failed: ${response.status}`)
   return response.json()
 }
+
+/**
+ * Calls the FastAPI `/extract-tags` endpoint to auto-extract physical
+ * descriptors from a person's photo using Gemini 1.5 Flash.
+ *
+ * @param {string} imageUrl - Public URL of the image to analyse.
+ * @returns {Promise<{physical_tags: string[], error?: string, warning?: string}>}
+ * @throws {Error} If the network request fails or the API returns a non-2xx status.
+ */
+export async function callMLExtractTags(imageUrl) {
+  const url = `${ML_API_BASE}/extract-tags`
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_url: imageUrl }),
+  })
+
+  if (!response.ok) {
+    let detail = response.statusText
+    try {
+      const err = await response.json()
+      detail = err?.detail?.message || err?.detail || detail
+    } catch { /* ignore */ }
+    throw new Error(`[ML Extract Tags] ${response.status} — ${detail}`)
+  }
+
+  return response.json()
+}

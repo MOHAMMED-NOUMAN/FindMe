@@ -2,8 +2,9 @@ import { useState, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X } from 'lucide-react'
+import { User, MapPin, Camera, Phone, Check, ChevronRight, ChevronLeft, AlertCircle, Loader2, X, Sparkles } from 'lucide-react'
 import { submitMissingPersonReport, generateRefId, checkDuplicates } from '../firebase/missingPersons'
+import { extractTagsFromFile } from '../services/geminiService'
 import indiaData from '../data/indiaStatesDistricts.json'
 import LocationPicker from '../components/LocationPicker'
 
@@ -246,13 +247,31 @@ function Step2({ data, onChange }) {
 function Step3({ data, onChange }) {
   const { t } = useTranslation();
   const [preview, setPreview] = useState(null)
+  const [scanning, setScanning] = useState(false)
+  const [aiTagged, setAiTagged] = useState(false)
   const fileInputRef = useRef(null)
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     onChange('photoFile', file)
     setPreview(URL.createObjectURL(file))
+    setAiTagged(false)
+
+    // Auto-tag: send file as base64 directly to Gemini — no backend needed
+    try {
+      setScanning(true)
+      const tags = await extractTagsFromFile(file)
+      if (tags.length > 0) {
+        onChange('description', tags.join(', '))
+        setAiTagged(true)
+        console.log('[DisasterIQ] Auto-tagged missing person:', tags)
+      }
+    } catch (err) {
+      console.warn('[DisasterIQ] Auto-tag failed (non-critical):', err.message)
+    } finally {
+      setScanning(false)
+    }
   }
 
   const handleBoxClick = () => {
@@ -267,7 +286,7 @@ function Step3({ data, onChange }) {
           <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-slate-200">
             <img src={preview} alt="Preview" className="w-full h-full object-cover" />
             <button
-              onClick={() => { setPreview(null); onChange('photoFile', null) }}
+              onClick={() => { setPreview(null); onChange('photoFile', null); setAiTagged(false) }}
               className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5"
             >
               <X className="w-3 h-3 text-white" />
@@ -283,14 +302,32 @@ function Step3({ data, onChange }) {
         )}
       </div>
       <div>
-        <label className="block text-sm font-bold text-[#0F172A] mb-2">{t('report_page.physical_desc')}</label>
+        <label className="block text-sm font-bold text-[#0F172A] mb-2 flex items-center gap-2">
+          {t('report_page.physical_desc')}
+          {scanning && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              AI Scanning…
+            </span>
+          )}
+          {!scanning && aiTagged && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3" />
+              AI Filled
+            </span>
+          )}
+        </label>
         <textarea
-          placeholder={t("report_page.desc_placeholder")}
+          placeholder={scanning ? 'AI is analysing the photo…' : t('report_page.desc_placeholder')}
           rows={4}
           value={data.description}
-          onChange={(e) => onChange('description', e.target.value)}
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 resize-none"
+          onChange={(e) => { onChange('description', e.target.value); setAiTagged(false) }}
+          disabled={scanning}
+          className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 resize-none transition-colors ${
+            scanning ? 'border-violet-200 bg-violet-50/30 text-slate-400 cursor-wait' : 'border-slate-200'
+          }`}
         />
+        <p className="text-xs text-slate-400 mt-1">AI auto-fills from the photo — you can edit freely.</p>
       </div>
     </div>
   )

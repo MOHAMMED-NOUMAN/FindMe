@@ -241,21 +241,29 @@ export async function submitMissingPersonReport(formData) {
 
   const refId = generateRefId();
 
+  // Auth is guaranteed by ensureAnonymousAuth() above, but we need
+  // a short pause to ensure the Firebase Storage SDK has the token.
+  const currentUser = auth.currentUser;
+  await new Promise(resolve => setTimeout(resolve, 300));
+
   let photoUrl = null;
   if (formData.photoFile) {
     try {
       const fileExt = formData.photoFile.name.split(".").pop() || "jpg";
-      const fileName = `missing_persons/${refId}/photo_${Math.random().toString(36).substring(2)}.${fileExt}`;
+      // Use uid in path so it matches auth context
+      const fileName = `missing_persons/${currentUser?.uid || refId}/photo_${Date.now()}.${fileExt}`;
       const storageRef = ref(storage, fileName);
-      const metadata = { contentType: formData.photoFile.type };
-      storage.maxUploadRetryTime = 3000;
-      await uploadBytes(storageRef, formData.photoFile, metadata);
-      photoUrl = await getDownloadURL(storageRef);
+      const metadata = { contentType: formData.photoFile.type || "image/jpeg" };
+
+      console.log(`[DisasterIQ] Uploading missing-person photo as uid=${currentUser?.uid}: ${fileName} (${formData.photoFile.size} bytes)`);
+      const snapshot = await uploadBytes(storageRef, formData.photoFile, metadata);
+      photoUrl = await getDownloadURL(snapshot.ref);
+      console.log(`[DisasterIQ] Upload successful: ${photoUrl}`);
     } catch (storageErr) {
-      console.warn(
-        "Storage upload failed, proceeding without photo:",
-        storageErr,
-      );
+      console.error("[DisasterIQ] Storage upload failed:", storageErr.code, storageErr.message);
+      if (storageErr.code === "storage/unauthorized") {
+        console.error("[DisasterIQ] Root cause: storage/unauthorized — check Anonymous Auth is enabled in Firebase Console.");
+      }
     }
   }
 
@@ -275,6 +283,7 @@ export async function submitMissingPersonReport(formData) {
     },
     description: formData.description?.trim() || null,
     photoUrl: photoUrl,
+    photo_url: photoUrl, // Ensure consistency with ML backend
     reporterContact: {
       phone: formData.phone?.trim() || null,
       altPhone: formData.altPhone?.trim() || null,

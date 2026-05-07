@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
-import { Camera, Check, Loader2, X } from 'lucide-react'
+import { Camera, Check, Loader2, X, Sparkles } from 'lucide-react'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase/config'
 import { ensureAnonymousAuth } from '../firebase/authService'
+import { extractTagsFromFile } from '../services/geminiService'
 
 export default function ReportFoundPage() {
   const { t } = useTranslation()
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState(null)
+  const [scanning, setScanning] = useState(false) // AI tag extraction in progress
 
   const [form, setForm] = useState({
     name: '',
@@ -25,32 +27,59 @@ export default function ReportFoundPage() {
 
   const setField = (key, val) => setForm(f => ({ ...f, [key]: val }))
 
-  const handleFile = (e) => {
+  // When a photo is selected: set preview immediately, then run AI auto-tag
+  const handleFile = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setField('photoFile', file)
     setField('previewUrl', URL.createObjectURL(file))
+
+    // Auto-tag: send file as base64 directly to Gemini — no backend needed
+    try {
+      setScanning(true)
+      const tags = await extractTagsFromFile(file)
+      if (tags.length > 0) {
+        setField('tags', tags.join(', '))
+        console.log('[DisasterIQ] Auto-tagged found person:', tags)
+      }
+    } catch (err) {
+      console.warn('[DisasterIQ] Auto-tag failed (non-critical):', err.message)
+    } finally {
+      setScanning(false)
+    }
   }
 
   const handleSubmit = async () => {
     setSubmitting(true)
     setError(null)
     try {
-      await ensureAnonymousAuth()
+      // Ensure auth is established FIRST and wait for the token to propagate
+      const user = await ensureAnonymousAuth()
+      if (!user) throw new Error('Authentication failed. Please refresh and try again.')
+
+      // Small delay to ensure the Firebase Auth token is registered in the Storage SDK
+      await new Promise(resolve => setTimeout(resolve, 300))
 
       let photoUrl = null
+      let uploadWarning = null
       if (form.photoFile) {
         try {
           const fileExt = form.photoFile.name.split('.').pop() || 'jpg'
-          const refId = `found-${Date.now()}`
-          const fileName = `found_persons/${refId}/photo_${Math.random().toString(36).substring(2)}.${fileExt}`
+          const fileName = `found_persons/${user.uid}_${Date.now()}/photo.${fileExt}`
           const storageRef = ref(storage, fileName)
-          const metadata = { contentType: form.photoFile.type }
-          storage.maxUploadRetryTime = 3000
-          await uploadBytes(storageRef, form.photoFile, metadata)
-          photoUrl = await getDownloadURL(storageRef)
+          const metadata = { contentType: form.photoFile.type || 'image/jpeg' }
+
+          console.log(`[DisasterIQ] Uploading found-person photo as uid=${user.uid}: ${fileName}`)
+          const snapshot = await uploadBytes(storageRef, form.photoFile, metadata)
+          photoUrl = await getDownloadURL(snapshot.ref)
+          console.log(`[DisasterIQ] Upload success: ${photoUrl}`)
         } catch (storageErr) {
-          console.warn('Storage upload failed (likely CORS or rules), falling back to no photo:', storageErr)
+          console.error('[DisasterIQ] Storage upload failed:', storageErr.code, storageErr.message)
+          // Surface a user-friendly warning but don't block submission
+          uploadWarning = `Photo upload failed (${storageErr.code || storageErr.message}). The report will be submitted without a photo.`
+          setError(uploadWarning)
+          await new Promise(resolve => setTimeout(resolve, 2000)) // Let user read it
+          setError(null)
         }
       }
 
@@ -82,13 +111,17 @@ export default function ReportFoundPage() {
         age: parseInt(form.age) || null,
         gender: form.gender || null,
         physical_tags: tagsArray,
+        physicalTags: tagsArray,
         location: {
           description: form.locationDesc.trim() || null,
           latitude: lat,
           longitude: lng,
         },
         photo_url: photoUrl,
+        photoUrl: photoUrl,
+        reporterUid: user.uid,
         status: 'found',
+        reviewStatus: 'new',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }
@@ -96,7 +129,7 @@ export default function ReportFoundPage() {
       await addDoc(collection(db, 'found_persons'), docData)
       setSubmitted(true)
     } catch (err) {
-      console.error(err)
+      console.error('[DisasterIQ] Submit failed:', err)
       setError(err?.message || t('report_found_page.submit_error'))
     } finally {
       setSubmitting(false)
@@ -210,16 +243,32 @@ export default function ReportFoundPage() {
 
             {/* Physical Tags */}
             <div>
-              <label className="block text-sm font-bold text-[#0F172A] mb-2">
+              <label className="block text-sm font-bold text-[#0F172A] mb-2 flex items-center gap-2">
                 {t('report_found_page.tags_label')}
+                {scanning && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 bg-violet-50 border border-violet-200 px-2 py-0.5 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    AI Scanning…
+                  </span>
+                )}
+                {!scanning && form.tags && form.photoFile && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <Sparkles className="w-3 h-3" />
+                    AI Filled
+                  </span>
+                )}
               </label>
               <input
                 type="text"
-                placeholder={t('report_found_page.tags_placeholder')}
+                placeholder={scanning ? 'AI is analysing the photo…' : t('report_found_page.tags_placeholder')}
                 value={form.tags}
                 onChange={(e) => setField('tags', e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30"
+                disabled={scanning}
+                className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/30 transition-colors ${
+                  scanning ? 'border-violet-200 bg-violet-50/30 text-slate-400 cursor-wait' : 'border-slate-200'
+                }`}
               />
+              <p className="text-xs text-slate-400 mt-1">Comma-separated. AI auto-fills from photo — you can edit.</p>
             </div>
 
             {/* Location */}
